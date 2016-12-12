@@ -175,7 +175,7 @@
             "tags": {
                 "displayName": "VmssrmStorageAccount"
             }
-        }
+        },
         {
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[concat('dbphp', variables('storageAcctName'), copyIndex())]",
@@ -190,7 +190,7 @@
                 "displayName": "DatabaseStorageAccount"
             },
             "properties": {
-                "accountType": "Premium_LRS"
+                "accountType": "Standard_LRS"
             }
         },
         {
@@ -207,7 +207,7 @@
             }
         },
       {
-        "name": "[variables('vnetName')]",
+        "name": "[concat('php', variables('vnetName'))]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
@@ -238,7 +238,7 @@
         }
       },
       {
-        "name": "[variables('vnetName')]",
+        "name": "[concat('portalrm', variables('vnetName'))]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
@@ -269,7 +269,7 @@
         }
       },
       {
-        "name": "[variables('vnetName')]",
+        "name": "[concat('AppRm', variables('vnetName'))]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
@@ -906,7 +906,7 @@
                                         "fileUris": [
                                             "[concat(variables('phpScriptLocation'),variables('install_phpScriptFileName'))]"
                                         ],
-                                        "commandToExecute": "[concat('sh ', variables('install_phpScriptFileName')]"
+                                        "commandToExecute": "[concat('bash', variables('install_phpScriptFileName'))]"
                                     }
                                 }
                             }
