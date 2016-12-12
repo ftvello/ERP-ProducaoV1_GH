@@ -57,19 +57,21 @@
     "variables": {
         "storageAcctName": "[concat(parameters('resourcesPrefix'),'sa')]",
         "jboxpipName" : "[concat('jb-',parameters('resourcesPrefix'))]",
-        "vnetName": "[concat(parameters('resourcesPrefix'),'vnet')]",
+        "vnetNamePhp": "[concat(parameters('resourcesPrefix'),'Phpvnet')]",
+        "vnetNamePortalRm": "[concat(parameters('resourcesPrefix'),'PortalRmvnet')]",
+        "vnetNameAppRm": "[concat(parameters('resourcesPrefix'),'AppRmvnet')]",
         "vmName": "[concat(parameters('resourcesPrefix'),'vm')]",
         "vnetPrefixphp": "172.16.0.0/16",
         "vnetPrefixportalrm": "172.17.0.0/16",
         "vnetPrefixApprm": "172.18.0.0/16",
         "SubnetWeb": "webtier",
         "SubnetWebPrefix": "172.16.0.0/24",
-        "SubnetWebRef": "[concat(variables('vnetID'), '/subnets/', variables('SubnetWeb'))]",
+        "SubnetWebRef": "[concat(variables('vnetIDPhp'), '/subnets/', variables('SubnetWeb'))]",
         "PHPvmIPPrefix": "172.16.0.1",
         "PortalRmvmIPPrefix": "172.17.0.1",
         "SubnetWebPortalrm": "Webportalrmtier",
         "SubnetWebPortalrmPrefix": "172.17.0.0/24",
-        "SubnetWebRefportalRm": "[concat(variables('vnetID'), '/subnets/', variables('SubnetWebPortalrm'))]",
+        "SubnetWebRefportalRm": "[concat(variables('vnetIDPortalRm'), '/subnets/', variables('SubnetWebPortalrm'))]",
         "GfsVmIPPrefix": "172.18.1.1",
         "volumeName": "data",
         "SubnetDb": "datatier",
@@ -83,10 +85,12 @@
         "AppRmVmIPPrefix": "172.18.1.1",
         "phpnicName": "vmssphpnic",
         "portalrmnicName": "vmssrmnic",
-        "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetName'))]",
-        "webSubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('SubnetWeb'))]",
-        "WebPortalRMSubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('SubnetWebPortalRM'))]",
-        "dbSubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('SubnetDb'))]",
+        "vnetIDPhp": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePhp'))]",
+        "vnetIDPortalRm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePortalRm'))]",
+        "vnetIDApprm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNameAppRm'))]",
+        "webSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetWeb'))]",
+        "WebPortalRMSubnetRef": "[concat(variables('vnetIDPortalRm'),'/subnets/',variables('SubnetWebPortalRM'))]",
+        "dbSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetDb'))]",
         "osImagePublisher": "Canonical",
         "osImageOffer": "UbuntuServer",
         "osImageSKU": "14.04.4-LTS",
@@ -110,18 +114,20 @@
         "wadcfgxend": "[concat('\"><MetricAggregation scheduledTransferPeriod=\"PT1H\"/><MetricAggregation scheduledTransferPeriod=\"PT1M\"/></Metrics></DiagnosticMonitorConfiguration></WadCfg>')]",
         "natPoolName": "natpool",
         "bePoolName": "bePool",
+        "natPoolNameportalrm": "natpool_portalrm",
+        "bePoolNameportalrm": "bePool_portalrm",
         "natStartPort": 50000,
         "natEndPort": 50119,
         "natBackendPort": 22,
         "ilbNicName": "ilbnic",
-        "lbID": "[resourceId('Microsoft.Network/loadBalancers','lbWebportalrm')]",
-        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb')]",
-        "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
-        "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/', variables('bePoolName'))]",
-        "lbIDrm": "[resourceId('Microsoft.Network/loadBalancers','lbWebphp')]",
-        "frontEndIPConfigIDrm": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb')]",
-        "lbProbeIDrm": "[concat(variables('lbID'),'/probes/tcpProbe')]",
-        "lbPoolIDrm": "[concat(variables('lbID'),'/backendAddressPools/', variables('bePoolName'))]",      
+        "lbID": "[resourceId('Microsoft.Network/loadBalancers','lbWebphp')]",
+        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb_php')]",
+        "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe_php')]",
+        "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/','php', variables('bePoolName'))]",
+        "lbIDrm": "[resourceId('Microsoft.Network/loadBalancers','lbWebportalrm')]",
+        "frontEndIPConfigIDrm": "[concat(variables('lbIDrm'),'/frontendIPConfigurations/ipcfg_lb_portalrm')]",
+        "lbProbeIDrm": "[concat(variables('lbIDrm'),'/probes/tcpProbe_portalrm')]",
+        "lbPoolIDrm": "[concat(variables('lbIDrm'),'/backendAddressPools/','portalRm', variables('bePoolNameportalrm'))]",      
         "storageApiVersion": "2015-06-15",
         "accountid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',variables('diagnosticsStorageAccountResourceGroup'),'/providers/','Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]",
         "osType": {
@@ -207,7 +213,7 @@
             }
         },
       {
-        "name": "[concat('php', variables('vnetName'))]",
+        "name": "[variables('vnetNamePhp')]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
@@ -238,7 +244,7 @@
         }
       },
       {
-        "name": "[concat('portalrm', variables('vnetName'))]",
+        "name": "[variables('vnetNamePortalRm')]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
@@ -269,7 +275,7 @@
         }
       },
       {
-        "name": "[concat('AppRm', variables('vnetName'))]",
+        "name": "[variables('vnetNameAppRm')]",
         "type": "Microsoft.Network/virtualNetworks",
         "location": "[resourceGroup().location]",
         "apiVersion": "2015-06-15",
@@ -355,11 +361,11 @@
         },
         "copy": {
           "name": "portalrm",
-          "count": "[variables('scaleNumber')]"
+          "count": "[variables('scaleNumberdb')]"
         },
         "dependsOn": [
           "[concat('Microsoft.Network/loadBalancers/', 'lbWebportalrm')]",
-          "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+          "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'))]"
         ],
         "properties": {
           "ipConfigurations": [
@@ -369,7 +375,7 @@
                 "privateIPAllocationMethod": "Static",
                 "privateIPAddress": "[concat(variables('PortalrmvmIPPrefix'), copyindex())]",
                 "subnet": {
-                  "id": "[variables('webSubnetRef')]"
+                  "id": "[variables('SubnetWebRefportalRm')]"
                 },
                 "loadBalancerBackendAddressPools": [
                   {
@@ -394,7 +400,7 @@
                 "count": "[variables('scaleNumber')]"
             },
             "dependsOn": [
-             "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+             "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'))]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -417,7 +423,7 @@
             "location": "[resourceGroup().location]",
             "apiVersion": "2015-06-15",
             "dependsOn": [
-                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'))]",
                 "[concat('Microsoft.Network/publicIPAddresses/', variables('jboxpipName'))]"
             ],
             "tags": {
@@ -450,7 +456,7 @@
         "apiVersion": "2015-06-15",
         "properties": {
           "dnsSettings": {
-            "domainNameLabel": "[tolower(concat('nlb-',parameters('resourcesPrefix')))]"
+            "domainNameLabel": "[tolower(concat('nlb-web',parameters('resourcesPrefix')))]"
           },
           "publicIPAllocationMethod": "static",
           "tags": {
@@ -465,7 +471,7 @@
             "apiVersion": "2015-06-15",
             "properties": {
                 "dnsSettings": {
-                    "domainNameLabel": "[tolower(concat('nlb-',parameters('resourcesPrefix')))]"
+                    "domainNameLabel": "[tolower(concat('nlb-PortalRm',parameters('resourcesPrefix')))]"
                 },
                 "publicIPAllocationMethod": "static",
                 "tags": {
@@ -621,7 +627,7 @@
         "properties": {
           "frontendIPConfigurations": [
             {
-              "name": "ipcfg_lb",
+              "name": "ipcfg_lb_php",
               "properties": {
                 "publicIPAddress": {
                   "id": "[variables('publicIPAddressID')]"
@@ -631,12 +637,12 @@
           ],
           "backendAddressPools": [
             {
-              "name": "[variables('bePoolName')]"
+              "name": "[concat('php', variables('bePoolName'))]"
             }
           ],
           "loadBalancingRules": [
             {
-              "name": "lbhttp",
+              "name": "lbhttp_php",
               "properties": {
                 "frontendIPConfiguration": {
                   "id": "[variables('frontEndIPConfigID')]"
@@ -655,7 +661,7 @@
               }
             },
             {
-              "name": "lbhttps",
+              "name": "lbhttps_php",
               "properties": {
                 "frontendIPConfiguration": {
                   "id": "[variables('frontEndIPConfigID')]"
@@ -676,7 +682,7 @@
           ],
           "probes": [
             {
-              "name": "tcpProbe",
+              "name": "tcpProbe_php",
               "properties": {
                 "protocol": "tcp",
                 "port": 80,
@@ -687,8 +693,8 @@
           ],
           "inboundNatPools": [
             {
-              "name": "[variables('natPoolName')]",
-              "properties": {
+              "name": "[concat('php', variables('natPoolName'))]",
+                "properties": {
                 "frontendIPConfiguration": {
                   "id": "[variables('frontEndIPConfigID')]"
                 },
@@ -712,7 +718,7 @@
             "properties": {
                 "frontendIPConfigurations": [
                 {
-                    "name": "ipcfg_lb",
+                    "name": "ipcfg_lb_portalrm",
                     "properties": {
                     "publicIPAddress": {
                         "id": "[variables('publicIPAddressIDRM')]"
@@ -722,12 +728,12 @@
                 ],
                 "backendAddressPools": [
                 {
-                    "name": "[variables('bePoolName')]"
+                    "name": "[variables('bePoolNameportalrm')]"
                 }
                 ],
                 "loadBalancingRules": [
                 {
-                    "name": "lbhttp",
+                    "name": "lbhttp_portalrm",
                     "properties": {
                     "frontendIPConfiguration": {
                         "id": "[variables('frontEndIPConfigIDrm')]"
@@ -746,7 +752,7 @@
                     }
                 },
                 {
-                    "name": "lbhttps",
+                    "name": "lbhttps_portalrm",
                     "properties": {
                     "frontendIPConfiguration": {
                         "id": "[variables('frontEndIPConfigIDrm')]"
@@ -767,7 +773,7 @@
                 ],
                 "probes": [
                 {
-                    "name": "tcpProbe",
+                    "name": "tcpProbe_portalrm",
                     "properties": {
                     "protocol": "tcp",
                     "port": 80,
@@ -778,7 +784,7 @@
                 ],
                 "inboundNatPools": [
                 {
-                    "name": "[variables('natPoolName')]",
+                    "name": "[variables('natPoolNameportalrm')]",
                     "properties": {
                     "frontendIPConfiguration": {
                         "id": "[variables('frontEndIPConfigIDrm')]"
@@ -804,7 +810,7 @@
                 "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '3')]",
                 "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '4')]",                            
                 "[concat('Microsoft.Network/loadBalancers/', 'lbWebphp')]",
-                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamephp'))]"
             ],
             "tags": {
                 "displayName": "webfarm_php"
@@ -852,19 +858,19 @@
                                 "properties": {
                                     "ipConfigurations": [
                                         {
-                                            "name": "ipcfg_lb",
+                                            "name": "ipcfg_lb_php",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetName'), '/subnets/', variables('subnetWeb'))]"
+                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'), '/subnets/', variables('subnetWeb'))]"
                                                 },
                                                 "loadBalancerBackendAddressPools": [
                                                     {
-                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/backendAddressPools/', variables('bePoolName'))]"
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/backendAddressPools/', 'php', variables('bePoolName'))]"
                                                     }
                                                 ],
                                                "loadBalancerInboundNatPools": [
                                                   {
-                                                      "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/inboundNatPools/', variables('natPoolName'))]"
+                                                      "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/inboundNatPools/', 'php', variables('natPoolName'))]"
                                                     }
                                                ]      
                                             }
