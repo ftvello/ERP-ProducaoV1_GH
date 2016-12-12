@@ -32,6 +32,7 @@
     <None Include="Scripts\install_mariadb.sh" />
     <None Include="Scripts\install_moodle.sh" />
     <None Include="Scripts\install_ngix.sh" />
+    <None Include="Scripts\install_php.sh" />
     <None Include="Scripts\setup_moodle.sh" />
     <None Include="Scripts\setup_moodle_old.sh" />
     <None Include="Templates\LinuxVirtualMachineScaleSet.json" />
