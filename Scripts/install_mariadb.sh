@@ -1,34 +1,6 @@
 #!/bin/bash
 
-# The MIT License (MIT)
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-# 
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-#
-# Install MariaDB Galera Cluster, by Julio Sene & Paulo Teixeira
-#
-# $1 - number of nodes; $2 - cluster name;
-#
-#
-# Script location: https://raw.githubusercontent.com/pateixei/MoodleAzure/master/scripts/
-
-NNODES=${1-1}
+NNODES=${1}
 MYSQLPASSWORD=${2:-""}
 USERPASSWORD=${4:-$MYSQLPASSWORD}
 IPPREFIX=${3:-"172.18.2."}
@@ -36,7 +8,6 @@ DEBPASSWORD=${5:-`date +%D%A%B | md5sum| sha256sum | base64| fold -w16| head -n1
 IPLIST=`echo ""`
 MYIP=`ip route get ${IPPREFIX}70 | awk 'NR==1 {print $NF}'`
 MYNAME=`echo "Node$MYIP" | sed 's/$IPPREFIX.1/-/'`
-CNAME=${6:-"GaleraCluster"}
 FIRSTNODE=`echo "${IPPREFIX}$(( $NNODES + 9 ))"`
 
 for (( n=1; n<=$NNODES; n++ ))
@@ -68,11 +39,11 @@ fi
 
 apt-get update > /dev/null
 
-echo "Installing MariaDB Custer for $NNODES on $DISTRO $REL ..."
+echo "Installing MariaDB $NNODES on $DISTRO $REL ..."
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y rsync mariadb-server
 
-echo "Configuring MariaDB Cluster"
+echo "Configuring MariaDB"
 # Remplace Debian maintenance config file
 
 echo -e '# Automatically generated for Debian scripts. DO NOT TOUCH!
@@ -81,7 +52,6 @@ echo -e '# Automatically generated for Debian scripts. DO NOT TOUCH!
     user     = debian-sys-maint
     password = '$DEBPASSWORD '
     socket   = /var/run/mysqld/mysqld.sock
-
     [mysql_upgrade]
     host     = localhost
     user     = debian-sys-maint
@@ -91,18 +61,6 @@ echo -e '# Automatically generated for Debian scripts. DO NOT TOUCH!
 
 mv ~/debian.cnf /etc/mysql/
 
-mysql -u root <<EOF
-CREATE DATABASE moodle;
-GRANT ALL PRIVILEGES ON moodle.* TO 'moodledba'@'%'
-IDENTIFIED BY '$USERPASSWORD';
-FLUSH PRIVILEGES;
-
-GRANT ALL PRIVILEGES on *.* TO 'debian-sys-maint'@'localhost' IDENTIFIED BY '$DEBPASSWORD' WITH GRANT OPTION;
-SET PASSWORD FOR 'root'@'localhost' = PASSWORD('$MYSQLPASSWORD');
-CREATE USER 'root'@'%' IDENTIFIED BY '$MYSQLPASSWORD';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
-EOF
 
 # To create another MariaDB root user:
 #CREATE USER '$MYSQLUSER'@'localhost' IDENTIFIED BY '$MYSQLUSERPASS';
@@ -117,10 +75,59 @@ service mysql stop
 
 # create Galera config file
 
-wget https://raw.githubusercontent.com/pateixei/azure-nginx-php-mariadb-cluster/master/files/cluster.cnf > /dev/null
-echo -e '[mysqld]
-#mysql settings
-#wsrep_on=ON
+#wget https://raw.githubusercontent.com/pateixei/azure-nginx-php-mariadb-cluster/master/files/cluster.cnf > /dev/null
+echo -e "
+#
+# These groups are read by MariaDB server.
+# Use it for options that only the server (but not clients) should see
+#
+# See the examples of server my.cnf files in /usr/share/mysql/
+#
+
+# this is read by the standalone daemon and embedded servers
+[server]
+
+#Tunning
+#innodb_buffer_pool_size=5120M
+innodb_buffer_pool_size=14G
+query_cache_type=0
+max_connections = 1000
+innodb_buffer_pool_instances=5
+table_open_cache=400
+
+innodb_flush_log_at_trx_commit=0
+innodb_flush_method = O_DIRECT
+innodb_old_blocks_time = 1000
+innodb_io_capacity=600
+
+sync_binlog=0
+query_cache_size=0
+query_cache_type=0
+join_buffer_size=128
+
+# key-buffer define quanto de memó serármazenado para
+# # gravar dados de consultas do MySQL. Quanto maior a quantidade
+# # de memó disponíl, melhor será desempenho do servidor
+key_buffer=312M
+
+# table_cache éuito importante, este nú deve ser o dobro
+# # do nú definido pela variál max_connections
+table_cache=2000
+
+sort_buffer=1M
+#record_buffer=1M
+myisam_sort_buffer_size=64M
+
+thread_cache=8
+thread_concurrency=8
+
+net_write_timeout=30
+connect_timeout=2
+wait_timeout=30
+
+# this is only for the mysqld standalone daemon
+[mysqld]
+max_allowed_packet=50M
 binlog_format=ROW
 default-storage-engine=innodb
 innodb_autoinc_lock_mode=2
@@ -128,39 +135,21 @@ query_cache_size=0
 query_cache_type=0
 bind-address=0.0.0.0
 
-#galera settings
-wsrep_provider=/usr/lib/galera/libgalera_smm.so
-wsrep_cluster_name="CLUSTERNAME"
-wsrep_cluster_address="gcomm://IPLIST"
-wsrep_sst_method=rsync
+# this is only for embedded server
+[embedded]
 
-# Galera Node Configuration
-wsrep_node_address="MYIP" 
-wsrep_node_name="MYNAME"' > ~/cluster.cnf 
+# This group is only read by MariaDB servers, not by MySQL.
+# If you use the same .cnf file for MySQL and MariaDB,
+# you can put MariaDB-only options here
+[mariadb]
 
-if [ "$FIRSTNODE" = "$MYIP" ];
-then
-   sed -i "s/#wsrep_on=ON/wsrep_on=ON/g;s/IPLIST//g;s/MYIP/$MYIP/g;s/MYNAME/$MYNAME/g;s/CLUSTERNAME/$CNAME/g" ~/cluster.cnf
-else
-   sed -i "s/#wsrep_on=ON/wsrep_on=ON/g;s/IPLIST/$IPLIST/g;s/MYIP/$MYIP/g;s/MYNAME/$MYNAME/g;s/CLUSTERNAME/$CNAME/g" ~/cluster.cnf
-fi
+# This group is only read by MariaDB-10.0 servers.
+# If you use the same .cnf file for MariaDB of different versions,
+# use this group for options that older servers don't understand
+[mariadb-10.0]" > ~/cluster.cnf 
 
 mv ~/cluster.cnf /etc/mysql/conf.d/
 
-# Create the raid disk 
-wget https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/shared_scripts/ubuntu/vm-disk-utils-0.1.sh
-bash vm-disk-utils-0.1.sh -s
-mkdir /datadisks/disk1/data
-cp -R -p /var/lib/mysql /datadisks/disk1/data/
-sed -i "s,/var/lib/mysql,/datadisks/disk1/data/mysql,g" /etc/mysql/my.cnf
-
-# Starts a cluster if is the first node
-if [ "$FIRSTNODE" = "$MYIP" ];
-then
-    service mysql start --wsrep-new-cluster > /dev/null
-    sed -i "s;gcomm://;gcomm://$IPLIST;g" /etc/mysql/conf.d/cluster.cnf
-else
-    service mysql start > /dev/null
-fi
+sudo service mysql start > /dev/null
 
 echo "MariaDB Cluster instalation finished"

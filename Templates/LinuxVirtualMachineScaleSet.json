@@ -81,8 +81,8 @@
         "SubnetAppRM": "AppRmtier",
         "SubnetAppRmPrefix": "172.18.1.0/24",
         "AppRmVmIPPrefix": "172.18.1.1",
-        "phpnicName": "vmssnic",
-        "portalrmnicName": "vmssnic",
+        "phpnicName": "vmssphpnic",
+        "portalrmnicName": "vmssrmnic",
         "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetName'))]",
         "webSubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('SubnetWeb'))]",
         "WebPortalRMSubnetRef": "[concat(variables('vnetID'),'/subnets/',variables('SubnetWebPortalRM'))]",
@@ -94,7 +94,7 @@
         "GlusterSetupCmd": "bash azuregfs.sh",
         "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/gluster-file-system/azuregfs.sh",
         "scaleNumber": 2,
-        "scaleNumberdb": 2,
+        "scaleNumberdb": 1,
         "gfsScaleNumber": 2,
         "SharedStorageAccountName": "[concat(variables('storageAcctName'), uniqueString(resourceGroup().id))]",
         "JumpVmOSDiskName": "JumpVmOSDisk",
@@ -114,10 +114,14 @@
         "natEndPort": 50119,
         "natBackendPort": 22,
         "ilbNicName": "ilbnic",
-        "lbID": "[resourceId('Microsoft.Network/loadBalancers','lbWeb')]",
+        "lbID": "[resourceId('Microsoft.Network/loadBalancers','lbWebportalrm')]",
         "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb')]",
         "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe')]",
-        "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/', variables('bePoolName'))]",        
+        "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/', variables('bePoolName'))]",
+        "lbIDrm": "[resourceId('Microsoft.Network/loadBalancers','lbWebphp')]",
+        "frontEndIPConfigIDrm": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb')]",
+        "lbProbeIDrm": "[concat(variables('lbID'),'/probes/tcpProbe')]",
+        "lbPoolIDrm": "[concat(variables('lbID'),'/backendAddressPools/', variables('bePoolName'))]",      
         "storageApiVersion": "2015-06-15",
         "accountid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',variables('diagnosticsStorageAccountResourceGroup'),'/providers/','Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]",
         "osType": {
@@ -129,13 +133,13 @@
         "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses','webpipphp')]",
         "publicIPAddressIDRM": "[resourceId('Microsoft.Network/publicIPAddresses','webpipportalrm')]",
         "siteFQDN" : "", 
-        "phpScriptLocation": "https://raw.githubusercontent.com/ftvello/EDU_MoodleAzure_Homo/master/Scripts/",
+        "phpScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
         "install_phpScriptFileName": "install_php.sh",
         "setup_phpScriptFileName": "setup_php.sh",
-        "mariadbScriptLocation": "https://raw.githubusercontent.com/ftvello/EDU_MoodleAzure_Homo/master/Scripts/",
+        "mariadbScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
         "install_mariadbScriptFileName": "install_mariadb.sh",
-        "nodeDBCount" : 2,
-        "subnetIPBase": "172.18.2.",
+        "nodeDBCount" : 1,
+        "subnetIPBase": "172.16.1.",
         "mariadbbe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/backendAddressPools/mariadb-be')]",
         "mariadbfipc": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/frontendIPConfigurations/mariadb-fipc')]",
         "mariadbprobe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/probes/mariadb-probe')]"    },
@@ -186,7 +190,7 @@
                 "displayName": "DatabaseStorageAccount"
             },
             "properties": {
-                "accountType": "Standard_LRS"
+                "accountType": "Premium_LRS"
             }
         },
         {
@@ -369,7 +373,7 @@
                 },
                 "loadBalancerBackendAddressPools": [
                   {
-                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers','lbwebphp'), '/backendAddressPools/bePool')]"
+                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers','lbwebportalrm'), '/backendAddressPools/bePool')]"
                   }
                 ]
               }
@@ -390,8 +394,7 @@
                 "count": "[variables('scaleNumber')]"
             },
             "dependsOn": [
-                "[concat('Microsoft.Network/loadBalancers/', 'mariadbLb')]",
-                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
+             "[concat('Microsoft.Network/virtualNetworks/', variables('vnetName'))]"
             ],
             "properties": {
                 "ipConfigurations": [
@@ -402,12 +405,7 @@
                             "privateIPAddress": "[concat(variables('dbVmIPPrefix'), copyindex())]",
                             "subnet": {
                                 "id": "[variables('dbSubnetRef')]"
-                            },
-                             "loadBalancerBackendAddressPools": [
-                            {
-                            "id": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'), '/backendAddressPools/mariadb-be')]"
-                            }
-]                            
+                            }                          
                         }
                     }
                 ]
@@ -452,7 +450,7 @@
         "apiVersion": "2015-06-15",
         "properties": {
           "dnsSettings": {
-            "domainNameLabel": "[tolower(concat('lb-',parameters('resourcesPrefix')))]"
+            "domainNameLabel": "[tolower(concat('nlb-',parameters('resourcesPrefix')))]"
           },
           "publicIPAllocationMethod": "static",
           "tags": {
@@ -467,7 +465,7 @@
             "apiVersion": "2015-06-15",
             "properties": {
                 "dnsSettings": {
-                    "domainNameLabel": "[tolower(concat('lb-',parameters('resourcesPrefix')))]"
+                    "domainNameLabel": "[tolower(concat('nlb-',parameters('resourcesPrefix')))]"
                 },
                 "publicIPAllocationMethod": "static",
                 "tags": {
@@ -485,7 +483,7 @@
             },
             "copy": {
                 "name": "db",
-                "count": "[variables('scaleNumber')]"
+                "count": "[variables('scaleNumberdb')]"
             },
             "dependsOn": [
               "[concat('Microsoft.Network/networkInterfaces/', 'dbnic', copyindex())]",
@@ -528,7 +526,7 @@
                                 "uri": "[concat('http://', 'dbphp', variables('storageAcctName'), copyindex(),'.blob.core.windows.net/vhds/', 'dbphp', variables('vmName'), copyIndex(), 'datadisk1.vhd')]"
                             },
                             "createOption": "Empty"
-                        },
+                        }
                     ]
                 },
                 "networkProfile": {
@@ -539,18 +537,39 @@
                     ]
                 }
             },
-            "resources": [
-                
-            ]            
+         "resources": [
+          {
+            "name": "install_mariadb",
+            "type": "extensions",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-15",
+            "dependsOn": [
+              "[concat('Microsoft.Compute/virtualMachines/','dbphp',variables('vmName'),copyIndex())]"
+            ],
+            "tags": {
+              "displayName": "install_mariadb"
+            },
+            "properties": {
+              "publisher": "Microsoft.OSTCExtensions",
+              "type": "CustomScriptForLinux",
+              "typeHandlerVersion": "1.4",
+              "autoUpgradeMinorVersion": true,
+              "settings": {
+                "fileUris": [
+                  "[concat(variables('mariadbScriptLocation'),variables('install_mariadbScriptFileName'))]"
+                ],
+                "commandToExecute": "[concat('bash ', variables('install_mariadbScriptFileName'),' ', variables('nodeDBCount'), ' ', parameters('mySQLrootPassword'),' ',variables('subnetIPBase'), ' ', parameters('mySQLuserPassword'))]"
+              }
+            }
+          }
+        ] 
         },
         {
             "name": "[concat('jbox',variables('vmName'))]",
             "type": "Microsoft.Compute/virtualMachines",
             "location": "[resourceGroup().location]",
             "apiVersion": "2015-06-15",
-            "dependsOn": [
-                "[concat('Microsoft.Compute/virtualMachines/gfs',variables('vmName'),'0')]",
-                "[concat('Microsoft.Compute/virtualMachines/gfs',variables('vmName'),'0/extensions/setupGluster')]",                
+            "dependsOn": [           
                 "[concat('Microsoft.Storage/storageAccounts/', variables('SharedStorageAccountName'))]",
                 "[concat('Microsoft.Network/networkInterfaces/', 'jboxnic')]"
             ],
@@ -589,10 +608,7 @@
                         }
                     }
                 }
-            },
-            "resources": [
-                
-            ]
+            }
         },
      {
         "apiVersion": "2016-03-30",
@@ -714,10 +730,10 @@
                     "name": "lbhttp",
                     "properties": {
                     "frontendIPConfiguration": {
-                        "id": "[variables('frontEndIPConfigID')]"
+                        "id": "[variables('frontEndIPConfigIDrm')]"
                     },
                     "backendAddressPool": {
-                        "id": "[variables('lbPoolID')]"
+                        "id": "[variables('lbPoolIDrm')]"
                     },
                     "protocol": "tcp",
                     "frontendPort": 80,
@@ -725,7 +741,7 @@
                     "enableFloatingIP": false,
                     "idleTimeoutInMinutes": 5,
                     "probe": {
-                        "id": "[variables('lbProbeID')]"
+                        "id": "[variables('lbProbeIDrm')]"
                     }
                     }
                 },
@@ -733,10 +749,10 @@
                     "name": "lbhttps",
                     "properties": {
                     "frontendIPConfiguration": {
-                        "id": "[variables('frontEndIPConfigID')]"
+                        "id": "[variables('frontEndIPConfigIDrm')]"
                     },
                     "backendAddressPool": {
-                        "id": "[variables('lbPoolID')]"
+                        "id": "[variables('lbPoolIDrm')]"
                     },
                     "protocol": "tcp",
                     "frontendPort": 443,
@@ -744,7 +760,7 @@
                     "enableFloatingIP": false,
                     "idleTimeoutInMinutes": 5,
                     "probe": {
-                        "id": "[variables('lbProbeID')]"
+                        "id": "[variables('lbProbeIDrm')]"
                     }
                     }
                 }
@@ -765,7 +781,7 @@
                     "name": "[variables('natPoolName')]",
                     "properties": {
                     "frontendIPConfiguration": {
-                        "id": "[variables('frontEndIPConfigID')]"
+                        "id": "[variables('frontEndIPConfigIDrm')]"
                     },
                     "protocol": "tcp",
                     "frontendPortRangeStart": "[variables('natStartPort')]",
