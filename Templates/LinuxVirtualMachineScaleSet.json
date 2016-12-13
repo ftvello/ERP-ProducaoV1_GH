@@ -971,7 +971,7 @@
               "publisher": "[variables('osImagePublisherWin')]",
               "offer": "[variables('osImageOfferWin')]",
               "sku": "[variables('osImageSKUWin')]",
-              "version": "[variables('osImageVersion')]"
+              "version": "4.0.20161012"
             }
           },
           "osProfile": {
