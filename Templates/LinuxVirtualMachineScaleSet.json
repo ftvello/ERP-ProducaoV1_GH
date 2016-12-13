@@ -94,6 +94,9 @@
         "osImagePublisher": "Canonical",
         "osImageOffer": "UbuntuServer",
         "osImageSKU": "14.04.4-LTS",
+        "osImagePublisherWin": "MicrosoftWindowsServer",
+        "osImageOfferWin": "WindowsServer-HUB",
+        "osImageSKUWin": "2012-R2-Datacenter-HUB",
         "osImageVersion": "latest",
         "GlusterSetupCmd": "bash azuregfs.sh",
         "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/gluster-file-system/azuregfs.sh",
@@ -144,6 +147,8 @@
         "setup_phpScriptFileName": "setup_php.sh",
         "mariadbScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
         "install_mariadbScriptFileName": "install_mariadb.sh",
+        "portalrmScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
+        "portalrmScriptFileName": "install_portalrm.ps1",
         "nodeDBCount" : 1,
         "subnetIPBase": "172.16.1.",
         "mariadbbe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/backendAddressPools/mariadb-be')]",
@@ -379,7 +384,7 @@
                 },
                 "loadBalancerBackendAddressPools": [
                   {
-                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers','lbwebportalrm'), '/backendAddressPools/bePool')]"
+                    "id": "[concat(resourceId('Microsoft.Network/loadBalancers','lbwebportalrm'),'/backendAddressPools/portalrmbePool_portalrm')]"
                   }
                 ]
               }
@@ -728,7 +733,7 @@
                 ],
                 "backendAddressPools": [
                 {
-                    "name": "[variables('bePoolNameportalrm')]"
+                    "name": "[concat('portalRm', variables('bePoolNameportalrm'))]"
                 }
                 ],
                 "loadBalancingRules": [
@@ -797,27 +802,150 @@
                 }
                 ]
             }            
-        },        
-        {
+        },
+      {
+        "type": "Microsoft.Compute/virtualMachineScaleSets",
+        "name": "webfarm_php",
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2016-03-30",
+        "dependsOn": [
+          "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '0')]",
+          "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '1')]",
+          "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '2')]",
+          "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '3')]",
+          "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '4')]",
+          "[concat('Microsoft.Network/loadBalancers/', 'lbWebphp')]",
+          "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamephp'))]"
+        ],
+        "tags": {
+          "displayName": "webfarm_php"
+        },
+        "sku": {
+          "capacity": 2,
+          "name": "Standard_DS1_v2",
+          "tier": "Standard"
+        },
+        "properties": {
+          "overprovision": "true",
+          "upgradePolicy": {
+            "mode": "Manual"
+          },
+          "virtualMachineProfile": {
+            "storageProfile": {
+              "osDisk": {
+                "vhdContainers": [
+                  "[concat('https://', 'vmssphp', variables('storageAcctName'), '0.blob.core.windows.net/vhds0')]",
+                  "[concat('https://', 'vmssphp', variables('storageAcctName'), '1.blob.core.windows.net/vhds1')]",
+                  "[concat('https://', 'vmssphp', variables('storageAcctName'), '2.blob.core.windows.net/vhds2')]",
+                  "[concat('https://', 'vmssphp', variables('storageAcctName'), '3.blob.core.windows.net/vhds3')]",
+                  "[concat('https://', 'vmssphp', variables('storageAcctName'), '4.blob.core.windows.net/vhds4')]"
+                ],
+                "name": "osdisk",
+                "caching": "ReadOnly",
+                "createOption": "FromImage"
+              },
+              "imageReference": {
+                "publisher": "[variables('osImagePublisher')]",
+                "offer": "[variables('osImageOffer')]",
+                "sku": "[variables('osImageSKU')]",
+                "version": "[variables('osImageVersion')]"
+              }
+            },
+            "osProfile": {
+              "computerNamePrefix": "[concat('webphp',variables('vmName'))]",
+              "adminUsername": "[parameters('adminUsername')]",
+              "adminPassword": "[parameters('adminPassword')]"
+            },
+            "networkProfile": {
+              "networkInterfaceConfigurations": [
+                {
+                  "name": "[variables('phpnicName')]",
+                  "properties": {
+                    "ipConfigurations": [
+                      {
+                        "name": "ipcfg_lb_php",
+                        "properties": {
+                          "subnet": {
+                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'), '/subnets/', variables('subnetWeb'))]"
+                          },
+                          "loadBalancerBackendAddressPools": [
+                            {
+                              "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/backendAddressPools/', 'php', variables('bePoolName'))]"
+                            }
+                          ],
+                          "loadBalancerInboundNatPools": [
+                            {
+                              "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/inboundNatPools/', 'php', variables('natPoolName'))]"
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "primary": "true"
+                  }
+                }
+              ]
+            },
+            "extensionProfile": {
+              "extensions": [
+                {
+                  "name": "LinuxDiagnostic",
+                  "properties": {
+                    "publisher": "Microsoft.OSTCExtensions",
+                    "type": "LinuxDiagnostic",
+                    "typeHandlerVersion": "2.3",
+                    "autoUpgradeMinorVersion": true,
+                    "settings": {
+                      "xmlCfg": "[base64(concat(variables('wadcfgxstart'),variables('wadmetricsresourceid'),variables('wadcfgxend')))]",
+                      "storageAccount": "[variables('diagnosticsStorageAccountName')]"
+                    },
+                    "protectedSettings": {
+                      "storageAccountName": "[variables('diagnosticsStorageAccountName')]",
+                      "storageAccountKey": "[listkeys(variables('accountid'), variables('storageApiVersion')).key1]",
+                      "storageAccountEndPoint": "https://core.windows.net"
+                    }
+                  }
+                },
+                {
+                  "name": "install_php",
+                  "properties": {
+                    "publisher": "Microsoft.OSTCExtensions",
+                    "type": "CustomScriptForLinux",
+                    "typeHandlerVersion": "1.4",
+                    "autoUpgradeMinorVersion": true,
+                    "settings": {
+                      "fileUris": [
+                        "[concat(variables('phpScriptLocation'),variables('install_phpScriptFileName'))]"
+                      ],
+                      "commandToExecute": "[concat('bash', variables('install_phpScriptFileName'))]"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
             "type": "Microsoft.Compute/virtualMachineScaleSets",
             "name": "webfarm_php",
             "location": "[resourceGroup().location]",
             "apiVersion": "2016-03-30",
             "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '0')]",
-                "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '1')]",
-                "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '2')]",
-                "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '3')]",
-                "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '4')]",                            
-                "[concat('Microsoft.Network/loadBalancers/', 'lbWebphp')]",
-                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamephp'))]"
+                "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '0')]",
+                "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '1')]",
+                "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '2')]",
+                "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '3')]",
+                "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '4')]",                            
+                "[concat('Microsoft.Network/loadBalancers/', 'lbWebportalrm')]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'))]"
             ],
             "tags": {
-                "displayName": "webfarm_php"
+                "displayName": "webfarm_portalrm"
             },
             "sku": {
                 "capacity": 2,
-                "name": "Standard_DS1_v2",
+                "name": "Standard_DS2_v2",
                 "tier": "Standard"
             },
             "properties": {
@@ -829,48 +957,48 @@
                     "storageProfile": {
                         "osDisk": {
                             "vhdContainers": [
-                                "[concat('https://', 'vmssphp', variables('storageAcctName'), '0.blob.core.windows.net/vhds0')]",
-                                "[concat('https://', 'vmssphp', variables('storageAcctName'), '1.blob.core.windows.net/vhds1')]",
-                                "[concat('https://', 'vmssphp', variables('storageAcctName'), '2.blob.core.windows.net/vhds2')]",
-                                "[concat('https://', 'vmssphp', variables('storageAcctName'), '3.blob.core.windows.net/vhds3')]",
-                                "[concat('https://', 'vmssphp', variables('storageAcctName'), '4.blob.core.windows.net/vhds4')]"
+                                "[concat('https://', 'vmssrm', variables('storageAcctName'), '0.blob.core.windows.net/vhds0')]",
+                                "[concat('https://', 'vmssrm', variables('storageAcctName'), '1.blob.core.windows.net/vhds1')]",
+                                "[concat('https://', 'vmssrm', variables('storageAcctName'), '2.blob.core.windows.net/vhds2')]",
+                                "[concat('https://', 'vmssrm', variables('storageAcctName'), '3.blob.core.windows.net/vhds3')]",
+                                "[concat('https://', 'vmssrm', variables('storageAcctName'), '4.blob.core.windows.net/vhds4')]"
                             ],
                             "name": "osdisk",
                             "caching": "ReadOnly",
                             "createOption": "FromImage"
                         },
                     "imageReference": {
-                        "publisher": "[variables('osImagePublisher')]",
-                        "offer": "[variables('osImageOffer')]",
-                        "sku": "[variables('osImageSKU')]",
+                        "publisher": "[variables('osImagePublisherWin')]",
+                        "offer": "[variables('osImageOfferWin')]",
+                        "sku": "[variables('osImageSKUWin')]",
                         "version": "[variables('osImageVersion')]"
                     }
                     },
                     "osProfile": {
-                        "computerNamePrefix": "[concat('webphp',variables('vmName'))]",
+                        "computerNamePrefix": "[concat('webportalrm',variables('vmName'))]",
                         "adminUsername": "[parameters('adminUsername')]",
                         "adminPassword": "[parameters('adminPassword')]"
                     },
                     "networkProfile": {
                         "networkInterfaceConfigurations": [
                             {
-                                "name": "[variables('phpnicName')]",
+                                "name": "[variables('portalrmnicName')]",
                                 "properties": {
                                     "ipConfigurations": [
                                         {
-                                            "name": "ipcfg_lb_php",
+                                            "name": "ipcfg_lb_portalrm",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'), '/subnets/', variables('subnetWeb'))]"
+                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'), '/subnets/', variables('SubnetWebPortalrm'))]"
                                                 },
                                                 "loadBalancerBackendAddressPools": [
                                                     {
-                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/backendAddressPools/', 'php', variables('bePoolName'))]"
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebportalrm/backendAddressPools/', 'portalRm', variables('bePoolNameportalrm'))]"
                                                     }
                                                 ],
                                                "loadBalancerInboundNatPools": [
                                                   {
-                                                      "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/inboundNatPools/', 'php', variables('natPoolName'))]"
+                                                      "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebportalrm/inboundNatPools/', 'portalrm', variables('natPoolNameportalrm'))]"
                                                     }
                                                ]      
                                             }
@@ -902,17 +1030,17 @@
                                 }
                             },
                             {
-                                "name": "install_php",
+                                "name": "install_portalrm",
                                 "properties": {
-                                    "publisher": "Microsoft.OSTCExtensions",
-                                    "type": "CustomScriptForLinux",
+                                    "publisher": "Microsoft.Compute",
+                                    "type": "CustomScriptExtension",
                                     "typeHandlerVersion": "1.4",
                                     "autoUpgradeMinorVersion": true,
                                     "settings": {
                                         "fileUris": [
-                                            "[concat(variables('phpScriptLocation'),variables('install_phpScriptFileName'))]"
+                                            "[concat(variables('portalrmScriptLocation'),variables('portalrmScriptFileName'))]"
                                         ],
-                                        "commandToExecute": "[concat('bash', variables('install_phpScriptFileName'))]"
+                                        "commandToExecute": "[concat('bash', variables('portalrmScriptFileName'))]"
                                     }
                                 }
                             }
