@@ -95,8 +95,8 @@
         "osImageOffer": "UbuntuServer",
         "osImageSKU": "14.04.4-LTS",
         "osImagePublisherWin": "MicrosoftWindowsServer",
-        "osImageOfferWin": "WindowsServer-HUB",
-        "osImageSKUWin": "2012-R2-Datacenter-HUB",
+        "osImageOfferWin": "WindowsServer",
+        "osImageSKUWin": "2012-R2-Datacenter",
         "osImageVersion": "latest",
         "GlusterSetupCmd": "bash azuregfs.sh",
         "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/gluster-file-system/azuregfs.sh",
@@ -789,7 +789,7 @@
         ],
         "inboundNatPools": [
           {
-            "name": "[variables('natPoolNameportalrm')]",
+            "name": "[concat('portalrm', variables('natPoolNameportalrm'))]",
             "properties": {
               "frontendIPConfiguration": {
                 "id": "[variables('frontEndIPConfigIDrm')]"
@@ -928,7 +928,7 @@
     },
     {
       "type": "Microsoft.Compute/virtualMachineScaleSets",
-      "name": "webfarm_portalrm",
+      "name": "webfarm_Rm",
       "location": "[resourceGroup().location]",
       "apiVersion": "2016-03-30",
       "dependsOn": [
@@ -941,7 +941,7 @@
         "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'))]"
       ],
       "tags": {
-        "displayName": "webfarm_portalrm"
+        "displayName": "webfarm_Rm"
       },
       "sku": {
         "capacity": 2,
@@ -971,11 +971,11 @@
               "publisher": "[variables('osImagePublisherWin')]",
               "offer": "[variables('osImageOfferWin')]",
               "sku": "[variables('osImageSKUWin')]",
-              "version": "4.0.20161012"
+              "version": "[variables('osImageVersion')]"
             }
           },
           "osProfile": {
-            "computerNamePrefix": "[concat('webportalrm',variables('vmName'))]",
+            "computerNamePrefix": "[concat('webRm',variables('vmName'))]",
             "adminUsername": "[parameters('adminUsername')]",
             "adminPassword": "[parameters('adminPassword')]"
           },
@@ -1130,14 +1130,14 @@
     {
       "type": "Microsoft.Insights/autoscaleSettings",
       "apiVersion": "2015-04-01",
-      "name": "autoscalewad_portalrm",
+      "name": "autoscalewad_Rm",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "Microsoft.Compute/virtualMachineScaleSets/webfarm_portalrm"
+        "Microsoft.Compute/virtualMachineScaleSets/webfarm_Rm"
       ],
       "properties": {
-        "name": "autoscalewad_portalrm",
-        "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_portalrm')]",
+        "name": "autoscalewad_Rm",
+        "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_Rm')]",
         "enabled": true,
         "profiles": [
           {
@@ -1152,7 +1152,7 @@
                 "metricTrigger": {
                   "metricName": "\\Processor\\PercentProcessorTime",
                   "metricNamespace": "",
-                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/','webfarm_portalrm')]",
+                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/','webfarm_Rm')]",
                   "timeGrain": "PT1M",
                   "statistic": "Average",
                   "timeWindow": "PT5M",
@@ -1171,7 +1171,7 @@
                 "metricTrigger": {
                   "metricName": "\\Processor\\PercentProcessorTime",
                   "metricNamespace": "",
-                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_portalrm')]",
+                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_Rm')]",
                   "timeGrain": "PT1M",
                   "statistic": "Average",
                   "timeWindow": "PT5M",
