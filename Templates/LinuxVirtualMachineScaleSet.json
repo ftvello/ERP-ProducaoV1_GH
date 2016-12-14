@@ -975,7 +975,7 @@
             }
           },
           "osProfile": {
-            "computerNamePrefix": "[concat('webRm',variables('vmName'))]",
+            "computerNamePrefix": "[concat('Rm',variables('vmName'))]",
             "adminUsername": "[parameters('adminUsername')]",
             "adminPassword": "[parameters('adminPassword')]"
           },
