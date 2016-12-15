@@ -1,159 +1,195 @@
 ﻿{
     "$schema": "https://schema.management.azure.coMicrosoft.Storage/storageAccounts/', variables('storageAcctName')m/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
-    "parameters": {
-        "resourcesPrefix": {
-            "type": "string",
-            "defaultValue": "azmooclus",
-            "metadata": {
-                "description": "Prefix of storage account name, network, virtual machines, and so on"
-            }
-        },
-        "vmSize": {
-            "type": "string",
-            "defaultValue": "Standard_DS1_v2",
-            "metadata": {
-                "description": "VM size for the nodes"
-            }
-        },
-        "moodleVersion": {
-            "type": "string",
-            "defaultValue": "MOODLE_31_STABLE",
-            "allowedValues": [
-                "MOODLE_31_STABLE",
-                "MOODLE_30_STABLE",
-                "MOODLE_29_STABLE"
-            ],
-            "metadata": {
-                "description": "The Moodle version you want to install."
-            }
-        },
-        "adminUsername": {
-            "type": "string",
-            "defaultValue": "azureadmin",
-            "metadata": {
-                "description": "ssh user name"
-            }
-        },
-        "adminPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "ssh password"
-            }
-        },
-        "mySQLuserPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "my sql regular user password"
-            }
-        },
-        "mySQLrootPassword": {
-            "type": "securestring",
-            "metadata": {
-                "description": "my sql root user password"
-            }
-        }
+  "parameters": {
+    "resourcesPrefix": {
+      "type": "string",
+      "defaultValue": "azmooclus",
+      "metadata": {
+        "description": "Prefix of storage account name, network, virtual machines, and so on"
+      }
     },
-    "variables": {
-        "storageAcctName": "[concat(parameters('resourcesPrefix'),'sa')]",
-        "jboxpipName" : "[concat('jb-',parameters('resourcesPrefix'))]",
-        "vnetNamePhp": "[concat(parameters('resourcesPrefix'),'Phpvnet')]",
-        "vnetNamePortalRm": "[concat(parameters('resourcesPrefix'),'PortalRmvnet')]",
-        "vnetNameAppRm": "[concat(parameters('resourcesPrefix'),'AppRmvnet')]",
-        "vmName": "[concat(parameters('resourcesPrefix'),'vm')]",
-        "vnetPrefixphp": "172.16.0.0/16",
-        "vnetPrefixportalrm": "172.17.0.0/16",
-        "vnetPrefixApprm": "172.18.0.0/16",
-        "SubnetWeb": "webtier",
-        "SubnetWebPrefix": "172.16.0.0/24",
-        "SubnetWebRef": "[concat(variables('vnetIDPhp'), '/subnets/', variables('SubnetWeb'))]",
-        "PHPvmIPPrefix": "172.16.0.1",
-        "PortalRmvmIPPrefix": "172.17.0.1",
-        "SubnetWebPortalrm": "Webportalrmtier",
-        "SubnetWebPortalrmPrefix": "172.17.0.0/24",
-        "SubnetWebRefportalRm": "[concat(variables('vnetIDPortalRm'), '/subnets/', variables('SubnetWebPortalrm'))]",
-        "GfsVmIPPrefix": "172.18.1.1",
-        "volumeName": "data",
-        "SubnetDb": "datatier",
-        "SubnetDbPrefix": "172.16.1.0/24",
-        "dbVmIPPrefix": "172.16.1.1",
-        "SubnetDbPortalRM": "dataportalrmtier",
-        "SubnetDbPortalrmPrefix": "172.17.1.0/24",
-        "dbportalrmVmIPPrefix": "172.17.1.1",
-        "SubnetAppRM": "AppRmtier",
-        "SubnetAppRmPrefix": "172.18.1.0/24",
-        "AppRmVmIPPrefix": "172.18.1.1",
-        "phpnicName": "vmssphpnic",
-        "portalrmnicName": "vmssrmnic",
-        "vnetIDPhp": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePhp'))]",
-        "vnetIDPortalRm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePortalRm'))]",
-        "vnetIDApprm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNameAppRm'))]",
-        "webSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetWeb'))]",
-        "WebPortalRMSubnetRef": "[concat(variables('vnetIDPortalRm'),'/subnets/',variables('SubnetWebPortalRM'))]",
-        "dbSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetDb'))]",
-        "osImagePublisher": "Canonical",
-        "osImageOffer": "UbuntuServer",
-        "osImageSKU": "14.04.4-LTS",
-        "osImagePublisherWin": "MicrosoftWindowsServer",
-        "osImageOfferWin": "WindowsServer",
-        "osImageSKUWin": "2012-R2-Datacenter",
-        "osImageVersion": "latest",
-        "GlusterSetupCmd": "bash azuregfs.sh",
-        "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/gluster-file-system/azuregfs.sh",
-        "scaleNumber": 2,
-        "scaleNumberdb": 1,
-        "gfsScaleNumber": 2,
-        "SharedStorageAccountName": "[concat(variables('storageAcctName'), uniqueString(resourceGroup().id))]",
-        "JumpVmOSDiskName": "JumpVmOSDisk",
-        "JumpVmVmSize": "Standard_DS1_v2",
-        "JumpVmStorageAccountContainerName": "vhds",
-        "diagnosticsStorageAccountName": "[variables('SharedStorageAccountName')]",
-        "diagnosticsStorageAccountResourceGroup": "[resourceGroup().name]",
-        "wadlogs": "<WadCfg><DiagnosticMonitorConfiguration>",
-        "wadperfcounters1": "<PerformanceCounters scheduledTransferPeriod=\"PT1M\"><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\AvailableMemory\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentAvailableMemory\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Mem. percent available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\UsedMemory\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory used\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentUsedMemory\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Memory percentage\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentUsedByCache\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Mem. used by cache\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentIdleTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU idle time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentUserTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU user time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentProcessorTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU percentage guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentIOWaitTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU IO wait time\" locale=\"en-us\"/></PerformanceCounterConfiguration>",
-        "wadperfcounters2": "<PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\BytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk total bytes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\ReadBytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk read guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\WriteBytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk write guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\TransfersPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk transfers\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\ReadsPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk reads\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\WritesPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk writes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageReadTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk read time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageWriteTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk write time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageTransferTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk transfer time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageDiskQueueLength\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"Disk queue length\" locale=\"en-us\"/></PerformanceCounterConfiguration></PerformanceCounters>",
-        "wadcfgxstart": "[concat(variables('wadlogs'),variables('wadperfcounters1'),variables('wadperfcounters2'),'<Metrics resourceId=\"')]",
-        "wadmetricsresourceid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',resourceGroup().name ,'/providers/','Microsoft.Compute/virtualMachineScaleSets/','vmSS',variables('vmName'))]",
-        "wadcfgxend": "[concat('\"><MetricAggregation scheduledTransferPeriod=\"PT1H\"/><MetricAggregation scheduledTransferPeriod=\"PT1M\"/></Metrics></DiagnosticMonitorConfiguration></WadCfg>')]",
-        "natPoolName": "natpool",
-        "bePoolName": "bePool",
-        "natPoolNameportalrm": "natpool_portalrm",
-        "bePoolNameportalrm": "bePool_portalrm",
-        "natStartPort": 50000,
-        "natEndPort": 50119,
-        "natBackendPort": 22,
-        "ilbNicName": "ilbnic",
-        "lbID": "[resourceId('Microsoft.Network/loadBalancers','lbWebphp')]",
-        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb_php')]",
-        "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe_php')]",
-        "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/','php', variables('bePoolName'))]",
-        "lbIDrm": "[resourceId('Microsoft.Network/loadBalancers','lbWebportalrm')]",
-        "frontEndIPConfigIDrm": "[concat(variables('lbIDrm'),'/frontendIPConfigurations/ipcfg_lb_portalrm')]",
-        "lbProbeIDrm": "[concat(variables('lbIDrm'),'/probes/tcpProbe_portalrm')]",
-        "lbPoolIDrm": "[concat(variables('lbIDrm'),'/backendAddressPools/','portalRm', variables('bePoolNameportalrm'))]",      
-        "storageApiVersion": "2015-06-15",
-        "accountid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',variables('diagnosticsStorageAccountResourceGroup'),'/providers/','Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]",
-        "osType": {
-            "publisher": "Canonical",
-            "offer": "UbuntuServer",
-            "sku": "14.04.4-LTS",
-            "version": "latest"
-        },
-        "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses','webpipphp')]",
-        "publicIPAddressIDRM": "[resourceId('Microsoft.Network/publicIPAddresses','webpipportalrm')]",
-        "siteFQDN" : "", 
-        "phpScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
-        "install_phpScriptFileName": "install_php.sh",
-        "setup_phpScriptFileName": "setup_php.sh",
-        "mariadbScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
-        "install_mariadbScriptFileName": "install_mariadb.sh",
-        "portalrmScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
-        "portalrmScriptFileName": "install_portalrm.ps1",
-        "nodeDBCount" : 1,
-        "subnetIPBase": "172.16.1.",
-        "mariadbbe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/backendAddressPools/mariadb-be')]",
-        "mariadbfipc": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/frontendIPConfigurations/mariadb-fipc')]",
-        "mariadbprobe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/probes/mariadb-probe')]"    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS1_v2",
+      "metadata": {
+        "description": "VM size for the nodes"
+      }
+    },
+    "vmSizesql": {
+      "type": "string",
+      "defaultValue": "Standard_DS13_v2",
+      "metadata": {
+        "description": "VM size for the nodes"
+      }
+    },
+    "vmSizemysql": {
+      "type": "string",
+      "defaultValue": "Standard_DS11_v2",
+      "metadata": {
+        "description": "VM size for the nodes"
+      }
+    },
+    "vmSizeProtalrm": {
+      "type": "string",
+      "defaultValue": "Standard_DS2_v2",
+      "metadata": {
+        "description": "VM size for the nodes"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_DS1_v2",
+      "metadata": {
+        "description": "VM size for the nodes"
+      }
+    },
+    "moodleVersion": {
+      "type": "string",
+      "defaultValue": "MOODLE_31_STABLE",
+      "allowedValues": [
+        "MOODLE_31_STABLE",
+        "MOODLE_30_STABLE",
+        "MOODLE_29_STABLE"
+      ],
+      "metadata": {
+        "description": "The Moodle version you want to install."
+      }
+    },
+    "adminUsername": {
+      "type": "string",
+      "defaultValue": "azureadmin",
+      "metadata": {
+        "description": "ssh user name"
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "ssh password"
+      }
+    },
+    "mySQLuserPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "my sql regular user password"
+      }
+    },
+    "mySQLrootPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "my sql root user password"
+      }
+    }
+  },
+  "variables": {
+    "storageAcctName": "[concat(parameters('resourcesPrefix'),'sa')]",
+    "jboxpipName": "[concat('jb-',parameters('resourcesPrefix'))]",
+    "vnetNamePhp": "[concat(parameters('resourcesPrefix'),'Phpvnet')]",
+    "vnetNamePortalRm": "[concat(parameters('resourcesPrefix'),'PortalRmvnet')]",
+    "vnetNameAppRm": "[concat(parameters('resourcesPrefix'),'AppRmvnet')]",
+    "vmName": "[concat(parameters('resourcesPrefix'),'vm')]",
+    "vnetPrefixphp": "172.16.0.0/16",
+    "vnetPrefixportalrm": "172.17.0.0/16",
+    "vnetPrefixApprm": "172.18.0.0/16",
+    "SubnetWeb": "webtier",
+    "SubnetWebPrefix": "172.16.0.0/24",
+    "SubnetWebRef": "[concat(variables('vnetIDPhp'), '/subnets/', variables('SubnetWeb'))]",
+    "PHPvmIPPrefix": "172.16.0.1",
+    "PortalRmvmIPPrefix": "172.17.0.1",
+    "SubnetWebPortalrm": "Webportalrmtier",
+    "SubnetWebPortalrmPrefix": "172.17.0.0/24",
+    "SubnetWebRefportalRm": "[concat(variables('vnetIDdbPortalRm'), '/subnets/', variables('SubnetWebPortalrm'))]",
+    "GfsVmIPPrefix": "172.18.1.1",
+    "volumeName": "data",
+    "SubnetDb": "datatier",
+    "SubnetDbPrefix": "172.16.1.0/24",
+    "dbVmIPPrefix": "172.16.1.1",
+    "SubnetDbPortalRM": "dataRmtier",
+    "SubnetDbPortalrmPrefix": "172.17.1.0/24",
+    "dbportalrmVmIPPrefix": "172.17.1.1",
+    "SubnetAppRM": "AppRmtier",
+    "SubnetAppRmPrefix": "172.18.1.0/24",
+    "SubnetWebRefAppRm": "[concat(variables('vnetIDApprm'), '/subnets/', variables('SubnetAppRM'))]",
+    "AppRmVmIPPrefix": "172.18.1.1",
+    "IpPHPSQL": "172.16.1.2",
+    "IpRMSQL": "172.17.1.2",
+    "IPAppSQL": "172.18.1.2",
+    "phpnicName": "vmssphpnic",
+    "portalrmnicName": "vmssrmnic",
+    "vnetIDPhp": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePhp'))]",
+    "vnetIDPortalRm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePortalRm'))]",
+    "vnetIDdbPortalRm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePortalRm'))]",
+    "vnetIDApprm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNameAppRm'))]",
+    "webSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetWeb'))]",
+    "WebPortalRMSubnetRef": "[concat(variables('vnetIDPortalRm'),'/subnets/',variables('SubnetWebPortalRM'))]",
+    "SubnetdbportalrmRef": "[concat(variables('vnetIDdbPortalRm'),'/subnets/',variables('SubnetDbPortalRM'))]",
+    "dbSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetDb'))]",
+    "osImagePublisher": "Canonical",
+    "osImageOffer": "UbuntuServer",
+    "osImageSKU": "14.04.4-LTS",
+    "osImagePublisherWin": "MicrosoftWindowsServer",
+    "osImageOfferWin": "WindowsServer",
+    "osImageSKUWin": "2012-R2-Datacenter",
+    "osImageVersion": "latest",
+    "GlusterSetupCmd": "bash azuregfs.sh",
+    "customScriptFilePath": "https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/gluster-file-system/azuregfs.sh",
+    "scaleNumber": 2,
+    "scaleNumberdb": 1,
+    "scaleNumbersql": 1,
+    "gfsScaleNumber": 2,
+    "SharedStorageAccountName": "[concat(variables('storageAcctName'), uniqueString(resourceGroup().id))]",
+    "JumpVmOSDiskName": "JumpVmOSDisk",
+    "JumpVmVmSize": "Standard_DS1_v2",
+    "JumpVmStorageAccountContainerName": "vhds",
+    "diagnosticsStorageAccountName": "[variables('SharedStorageAccountName')]",
+    "diagnosticsStorageAccountResourceGroup": "[resourceGroup().name]",
+    "wadlogs": "<WadCfg><DiagnosticMonitorConfiguration>",
+    "wadperfcounters1": "<PerformanceCounters scheduledTransferPeriod=\"PT1M\"><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\AvailableMemory\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentAvailableMemory\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Mem. percent available\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\UsedMemory\" sampleRate=\"PT15S\" unit=\"Bytes\"><annotation displayName=\"Memory used\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentUsedMemory\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Memory percentage\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Memory\\PercentUsedByCache\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"Mem. used by cache\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentIdleTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU idle time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentUserTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU user time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentProcessorTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU percentage guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\Processor\\PercentIOWaitTime\" sampleRate=\"PT15S\" unit=\"Percent\"><annotation displayName=\"CPU IO wait time\" locale=\"en-us\"/></PerformanceCounterConfiguration>",
+    "wadperfcounters2": "<PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\BytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk total bytes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\ReadBytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk read guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\WriteBytesPerSecond\" sampleRate=\"PT15S\" unit=\"BytesPerSecond\"><annotation displayName=\"Disk write guest OS\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\TransfersPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk transfers\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\ReadsPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk reads\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\WritesPerSecond\" sampleRate=\"PT15S\" unit=\"CountPerSecond\"><annotation displayName=\"Disk writes\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageReadTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk read time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageWriteTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk write time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageTransferTime\" sampleRate=\"PT15S\" unit=\"Seconds\"><annotation displayName=\"Disk transfer time\" locale=\"en-us\"/></PerformanceCounterConfiguration><PerformanceCounterConfiguration counterSpecifier=\"\\PhysicalDisk\\AverageDiskQueueLength\" sampleRate=\"PT15S\" unit=\"Count\"><annotation displayName=\"Disk queue length\" locale=\"en-us\"/></PerformanceCounterConfiguration></PerformanceCounters>",
+    "wadcfgxstart": "[concat(variables('wadlogs'),variables('wadperfcounters1'),variables('wadperfcounters2'),'<Metrics resourceId=\"')]",
+    "wadmetricsresourceid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',resourceGroup().name ,'/providers/','Microsoft.Compute/virtualMachineScaleSets/','vmSS',variables('vmName'))]",
+    "wadcfgxend": "[concat('\"><MetricAggregation scheduledTransferPeriod=\"PT1H\"/><MetricAggregation scheduledTransferPeriod=\"PT1M\"/></Metrics></DiagnosticMonitorConfiguration></WadCfg>')]",
+    "natPoolName": "natpool",
+    "bePoolName": "bePool",
+    "natPoolNameportalrm": "natpool_portalrm",
+    "bePoolNameportalrm": "bePool_portalrm",
+    "natStartPort": 50000,
+    "natEndPort": 50119,
+    "natBackendPort": 22,
+    "ilbNicName": "ilbnic",
+    "lbID": "[resourceId('Microsoft.Network/loadBalancers','lbWebphp')]",
+    "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/ipcfg_lb_php')]",
+    "lbProbeID": "[concat(variables('lbID'),'/probes/tcpProbe_php')]",
+    "lbPoolID": "[concat(variables('lbID'),'/backendAddressPools/','php', variables('bePoolName'))]",
+    "lbIDrm": "[resourceId('Microsoft.Network/loadBalancers','lbWebportalrm')]",
+    "frontEndIPConfigIDrm": "[concat(variables('lbIDrm'),'/frontendIPConfigurations/ipcfg_lb_portalrm')]",
+    "lbProbeIDrm": "[concat(variables('lbIDrm'),'/probes/tcpProbe_portalrm')]",
+    "lbPoolIDrm": "[concat(variables('lbIDrm'),'/backendAddressPools/','portalRm', variables('bePoolNameportalrm'))]",
+    "storageApiVersion": "2015-06-15",
+    "accountid": "[concat('/subscriptions/',subscription().subscriptionId,'/resourceGroups/',variables('diagnosticsStorageAccountResourceGroup'),'/providers/','Microsoft.Storage/storageAccounts/', variables('diagnosticsStorageAccountName'))]",
+    "osType": {
+      "publisher": "Canonical",
+      "offer": "UbuntuServer",
+      "sku": "14.04.4-LTS",
+      "version": "latest"
+    },
+    "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses','webpipphp')]",
+    "publicIPAddressIDRM": "[resourceId('Microsoft.Network/publicIPAddresses','webpipportalrm')]",
+    "siteFQDN": "",
+    "phpScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
+    "install_phpScriptFileName": "install_php.sh",
+    "setup_phpScriptFileName": "setup_php.sh",
+    "mariadbScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
+    "install_mariadbScriptFileName": "install_mariadb.sh",
+    "portalrmScriptLocation": "https://raw.githubusercontent.com/ftvello/ERP-ProducaoV1_GH/master/Scripts/",
+    "portalrmScriptFileName": "install_portalrm.ps1",
+    "nodeDBCount": 1,
+    "subnetIPBase": "172.16.1.",
+    "mariadbbe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/backendAddressPools/mariadb-be')]",
+    "mariadbfipc": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/frontendIPConfigurations/mariadb-fipc')]",
+    "mariadbprobe": "[concat(resourceId('Microsoft.Network/loadBalancers','mariadblb'),'/probes/mariadb-probe')]"
+  },
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
@@ -201,7 +237,24 @@
         "displayName": "DatabaseStorageAccount"
       },
       "properties": {
-        "accountType": "Standard_LRS"
+        "accountType": "Premium_LRS"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[concat('sql', variables('storageAcctName'), copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "copy": {
+        "name": "sql",
+        "count": "[variables('scaleNumbersql')]"
+      },
+      "tags": {
+        "displayName": "SqlDBStorageAccount"
+      },
+      "properties": {
+        "accountType": "Premium_LRS"
       }
     },
     {
@@ -359,34 +412,88 @@
     {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('portalrmnic', copyindex())]",
+      "name": "[concat('sqlphpnic', copyindex())]",
       "location": "[resourceGroup().location]",
       "tags": {
-        "displayName": "PortalrmNic"
+        "displayName": "SQLphpNic"
       },
       "copy": {
-        "name": "portalrm",
+        "name": "sqlphp",
         "count": "[variables('scaleNumberdb')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Network/loadBalancers/', 'lbWebportalrm')]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipcfg_Sqlphp",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[concat(variables('dbVmIPPrefix'), copyindex(2))]",
+              "subnet": {
+                "id": "[variables('dbSubnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat('sqlRmnic', copyindex())]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "SQLRmNic"
+      },
+      "copy": {
+        "name": "sqlRm",
+        "count": "[variables('scaleNumberdb')]"
+      },
+      "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'))]"
       ],
       "properties": {
         "ipConfigurations": [
           {
-            "name": "ipcfg_php",
+            "name": "ipcfg_SqlRm",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('PortalrmvmIPPrefix'), copyindex())]",
+              "privateIPAddress": "[concat(variables('dbportalrmVmIPPrefix'), copyindex(2))]",
               "subnet": {
-                "id": "[variables('SubnetWebRefportalRm')]"
-              },
-              "loadBalancerBackendAddressPools": [
-                {
-                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers','lbwebportalrm'),'/backendAddressPools/portalrmbePool_portalrm')]"
-                }
-              ]
+                "id": "[variables('SubnetdbportalrmRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat('sqlAppnic', copyindex())]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "SQLAppNic"
+      },
+      "copy": {
+        "name": "sqlApp",
+        "count": "[variables('scaleNumberdb')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNameAppRm'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipcfg_SqlApp",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[concat(variables('AppRmVmIPPrefix'), copyindex(2))]",
+              "subnet": {
+                "id": "[variables('SubnetWebRefAppRm')]"
+              }
             }
           }
         ]
@@ -503,7 +610,7 @@
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[parameters('vmSize')]"
+          "vmSize": "[parameters('vmSizemysql')]"
         },
         "availabilitySet": {
           "id": "[resourceId('Microsoft.Compute/availabilitySets','dbAvSet')]"
@@ -574,6 +681,94 @@
           }
         }
       ]
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat('SQL',variables('vmName'), copyindex())]",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "SQL"
+      },
+      "copy": {
+        "name": "sql",
+        "count": "[variables('scaleNumberdb')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', 'sqlphpnic', copyindex())]",
+        "[concat('Microsoft.Network/networkInterfaces/', 'sqlRmnic', copyindex())]",
+        "[concat('Microsoft.Network/networkInterfaces/', 'sqlAppnic', copyindex())]",
+        "[concat('Microsoft.Storage/storageAccounts/', 'sql', variables('storageAcctName'), copyindex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', 'sqlAvSet')]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSizesql')]"
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets','sqlAvSet')]"
+        },
+        "osProfile": {
+          "computerName": "[concat('sql',variables('vmName'), copyIndex())]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('osImagePublisherWin')]",
+            "offer": "[variables('osImageOfferWin')]",
+            "sku": "[variables('osImageSKUWin')]",
+            "version": "[variables('osImageVersion')]"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(), '.blob.core.windows.net/vhds/', 'sql',variables('vmName'), copyIndex(), 'osdisk.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "datadisk1",
+              "diskSizeGB": "128",
+              "lun": 0,
+              "vhd": {
+                "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(),'.blob.core.windows.net/vhds/', 'sql', variables('vmName'), copyIndex(), 'datadisk1.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk2",
+              "diskSizeGB": "128",
+              "lun": 1,
+              "vhd": {
+                "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(),'.blob.core.windows.net/vhds/', 'sql', variables('vmName'), copyIndex(), 'datadisk2.vhd')]"
+              },
+              "createOption": "Empty"
+            },
+            {
+              "name": "datadisk3",
+              "diskSizeGB": "512",
+              "lun": 2,
+              "vhd": {
+                "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(0),'.blob.core.windows.net/vhds/', 'sql', variables('vmName'), copyIndex(), 'datadisk3.vhd')]"
+              },
+              "createOption": "Empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "properties": {
+                "primary": true
+              },
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat('sqlphpnic', copyindex()))]"
+            }
+          ]
+            }
+      }
     },
     {
       "name": "[concat('jbox',variables('vmName'))]",
@@ -975,7 +1170,7 @@
             }
           },
           "osProfile": {
-            "computerNamePrefix": "[concat('Rm',variables('vmName'))]",
+            "computerNamePrefix": "Portalrm",
             "adminUsername": "[parameters('adminUsername')]",
             "adminPassword": "[parameters('adminPassword')]"
           },
@@ -1040,7 +1235,7 @@
                     "fileUris": [
                       "[concat(variables('portalrmScriptLocation'),variables('portalrmScriptFileName'))]"
                     ],
-                    "commandToExecute": "[concat('bash', variables('portalrmScriptFileName'))]"
+                    "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('portalrmScriptFileName'))]"
                   }
                 }
               }
@@ -1062,6 +1257,20 @@
         "platformUpdateDomainCount": 5,
         "platformFaultDomainCount": 3
       }
+    },
+    {
+      "name": "sqlAvSet",
+      "type": "Microsoft.Compute/availabilitySets",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "sqlAvSet"
+      },
+      "properties": {
+        "platformUpdateDomainCount": 5,
+        "platformFaultDomainCount": 3
+      },
     },
     {
       "type": "Microsoft.Insights/autoscaleSettings",
@@ -1190,6 +1399,6 @@
           }
         ]
       }
-    },
+    }
   ]
-}
+    }
