@@ -16,9 +16,9 @@
         "description": "VM size for the nodes"
       }
     },
-    "vmSizesql": {
+    "vmSizeLs": {
       "type": "string",
-      "defaultValue": "Standard_DS13_v2",
+      "defaultValue": "Standard_DS1_v2",
       "metadata": {
         "description": "VM size for the nodes"
       }
@@ -98,19 +98,22 @@
     "PHPvmIPPrefix": "172.16.0.1",
     "PortalRmvmIPPrefix": "172.17.0.1",
     "SubnetWebPortalrm": "Webportalrmtier",
-    "SubnetWebPortalrmPrefix": "172.17.0.0/24",
+    "SubnetWebPortalrmPrefix": "172.16.3.0/24",
     "SubnetWebRefportalRm": "[concat(variables('vnetIDdbPortalRm'), '/subnets/', variables('SubnetWebPortalrm'))]",
     "GfsVmIPPrefix": "172.18.1.1",
     "volumeName": "data",
     "SubnetDb": "datatier",
     "SubnetDbPrefix": "172.16.1.0/24",
     "dbVmIPPrefix": "172.16.1.1",
-    "SubnetDbPortalRM": "dataRmtier",
-    "SubnetDbPortalrmPrefix": "172.17.1.0/24",
+    "appVmIPPrefix": "172.16.2.1",
+    "portalVmIPPrefix": "172.16.3.1",
+    "dataportalVmIPPrefix": "172.16.4.1",
+    "SubnetDbPortalRM": "dataportaltier",
+    "SubnetDbPortalrmPrefix": "172.16.4.0/24",
     "dbportalrmVmIPPrefix": "172.17.1.1",
-    "SubnetAppRM": "AppRmtier",
-    "SubnetAppRmPrefix": "172.18.1.0/24",
-    "SubnetWebRefAppRm": "[concat(variables('vnetIDApprm'), '/subnets/', variables('SubnetAppRM'))]",
+    "SubnetAppRM": "apptier",
+    "SubnetAppRmPrefix": "172.16.2.0/24",
+    "SubnetWebRefAppRm": "[concat(variables('vnetIDphp'), '/subnets/', variables('SubnetAppRM'))]",
     "AppRmVmIPPrefix": "172.18.1.1",
     "IpPHPSQL": "172.16.1.2",
     "IpRMSQL": "172.17.1.2",
@@ -122,8 +125,8 @@
     "vnetIDdbPortalRm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNamePortalRm'))]",
     "vnetIDApprm": "[resourceId('Microsoft.Network/virtualNetworks',variables('vnetNameAppRm'))]",
     "webSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetWeb'))]",
-    "WebPortalRMSubnetRef": "[concat(variables('vnetIDPortalRm'),'/subnets/',variables('SubnetWebPortalRM'))]",
-    "SubnetdbportalrmRef": "[concat(variables('vnetIDdbPortalRm'),'/subnets/',variables('SubnetDbPortalRM'))]",
+    "WebPortalRMSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetWebPortalRM'))]",
+    "SubnetdbportalrmRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetDbPortalRM'))]",
     "dbSubnetRef": "[concat(variables('vnetIDPhp'),'/subnets/',variables('SubnetDb'))]",
     "osImagePublisher": "Canonical",
     "osImageOffer": "UbuntuServer",
@@ -137,6 +140,7 @@
     "scaleNumber": 2,
     "scaleNumberdb": 1,
     "scaleNumbersql": 1,
+    "scaleNumberls": 1,
     "gfsScaleNumber": 2,
     "SharedStorageAccountName": "[concat(variables('storageAcctName'), uniqueString(resourceGroup().id))]",
     "JumpVmOSDiskName": "JumpVmOSDisk",
@@ -193,292 +197,31 @@
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
-      "apiVersion": "2015-05-01-preview",
-      "copy": {
-        "name": "vmssphp",
-        "count": 5
-      },
-      "location": "[resourceGroup().location]",
-      "name": "[concat('vmssphp',variables('storageAcctName'), copyIndex())]",
-      "properties": {
-        "accountType": "Standard_LRS"
-      },
-      "tags": {
-        "displayName": "VmssphpStorageAccount"
-      }
-    },
-    {
-      "type": "Microsoft.Storage/storageAccounts",
-      "apiVersion": "2015-05-01-preview",
-      "copy": {
-        "name": "vmssrm",
-        "count": 5
-      },
-      "location": "[resourceGroup().location]",
-      "name": "[concat('vmssrm',variables('storageAcctName'), copyIndex())]",
-      "properties": {
-        "accountType": "Standard_LRS"
-      },
-      "tags": {
-        "displayName": "VmssrmStorageAccount"
-      }
-    },
-    {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[concat('dbphp', variables('storageAcctName'), copyIndex())]",
+      "name": "[concat('lincense', variables('storageAcctName'), copyIndex())]",
       "location": "[resourceGroup().location]",
       "apiVersion": "2015-06-15",
       "dependsOn": [],
       "copy": {
-        "name": "dbphp",
-        "count": "[variables('scaleNumberdb')]"
+        "name": "license",
+        "count": "[variables('scaleNumberls')]"
       },
       "tags": {
-        "displayName": "DatabaseStorageAccount"
-      },
-      "properties": {
-        "accountType": "Premium_LRS"
-      }
-    },
-    {
-      "type": "Microsoft.Storage/storageAccounts",
-      "name": "[concat('sql', variables('storageAcctName'), copyIndex())]",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "copy": {
-        "name": "sql",
-        "count": "[variables('scaleNumbersql')]"
-      },
-      "tags": {
-        "displayName": "SqlDBStorageAccount"
-      },
-      "properties": {
-        "accountType": "Premium_LRS"
-      }
-    },
-    {
-      "name": "[variables('SharedStorageAccountName')]",
-      "type": "Microsoft.Storage/storageAccounts",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "SharedStorageAccount"
+        "displayName": "lsStorageAccount"
       },
       "properties": {
         "accountType": "Standard_LRS"
       }
     },
     {
-      "name": "[variables('vnetNamePhp')]",
-      "type": "Microsoft.Network/virtualNetworks",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "PHPVirtualNetwork"
-      },
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[variables('vnetPrefixphp')]"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[variables('SubnetWeb')]",
-            "properties": {
-              "addressPrefix": "[variables('SubnetWebPrefix')]"
-            }
-          },
-          {
-            "name": "[variables('SubnetDb')]",
-            "properties": {
-              "addressPrefix": "[variables('SubnetDbPrefix')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "[variables('vnetNamePortalRm')]",
-      "type": "Microsoft.Network/virtualNetworks",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "PortalRMVirtualNetwork"
-      },
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[variables('vnetPrefixportalrm')]"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[variables('SubnetWebPortalrm')]",
-            "properties": {
-              "addressPrefix": "[variables('SubnetWebPortalrmPrefix')]"
-            }
-          },
-          {
-            "name": "[variables('SubnetDbPortalRM')]",
-            "properties": {
-              "addressPrefix": "[variables('SubnetDbPortalrmPrefix')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "[variables('vnetNameAppRm')]",
-      "type": "Microsoft.Network/virtualNetworks",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "AppRMVirtualNetwork"
-      },
-      "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[variables('vnetPrefixApprm')]"
-          ]
-        },
-        "subnets": [
-          {
-            "name": "[variables('SubnetAppRM')]",
-            "properties": {
-              "addressPrefix": "[variables('SubnetAppRmPrefix')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "[variables('jboxpipName')]",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "jboxpip"
-      },
-      "properties": {
-        "publicIPAllocationMethod": "Dynamic",
-        "dnsSettings": {
-          "domainNameLabel": "[variables('jBoxPipName')]"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Network/networkSecurityGroups",
-      "name": "jboxNsg",
-      "apiVersion": "2016-03-30",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "securityRules": [
-          {
-            "name": "Allow_SSH",
-            "properties": {
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "22",
-              "sourceAddressPrefix": "*",
-              "destinationAddressPrefix": "*",
-              "access": "Allow",
-              "priority": 1000,
-              "direction": "Inbound"
-            }
-          },
-          {
-            "name": "Allow_http",
-            "properties": {
-              "protocol": "Tcp",
-              "sourcePortRange": "*",
-              "destinationPortRange": "80",
-              "sourceAddressPrefix": "*",
-              "destinationAddressPrefix": "*",
-              "access": "Allow",
-              "priority": 1005,
-              "direction": "Inbound"
-            }
-          }
-        ]
-      }
-    },
-    {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('sqlphpnic', copyindex())]",
+      "name": "[concat('lserpnic', copyindex())]",
       "location": "[resourceGroup().location]",
       "tags": {
-        "displayName": "SQLphpNic"
+        "displayName": "lserpnic"
       },
       "copy": {
-        "name": "sqlphp",
-        "count": "[variables('scaleNumberdb')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'))]"
-      ],
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipcfg_Sqlphp",
-            "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('dbVmIPPrefix'), copyindex(2))]",
-              "subnet": {
-                "id": "[variables('dbSubnetRef')]"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "apiVersion": "2015-05-01-preview",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('sqlRmnic', copyindex())]",
-      "location": "[resourceGroup().location]",
-      "tags": {
-        "displayName": "SQLRmNic"
-      },
-      "copy": {
-        "name": "sqlRm",
-        "count": "[variables('scaleNumberdb')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'))]"
-      ],
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipcfg_SqlRm",
-            "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('dbportalrmVmIPPrefix'), copyindex(2))]",
-              "subnet": {
-                "id": "[variables('SubnetdbportalrmRef')]"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "apiVersion": "2015-05-01-preview",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('sqlAppnic', copyindex())]",
-      "location": "[resourceGroup().location]",
-      "tags": {
-        "displayName": "SQLAppNic"
-      },
-      "copy": {
-        "name": "sqlApp",
+        "name": "lserpnic",
         "count": "[variables('scaleNumberdb')]"
       },
       "dependsOn": [
@@ -487,229 +230,44 @@
       "properties": {
         "ipConfigurations": [
           {
-            "name": "ipcfg_SqlApp",
+            "name": "ipcfg_lserp",
             "properties": {
               "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('AppRmVmIPPrefix'), copyindex(2))]",
+              "privateIPAddress": "[concat(variables('appVmIPPrefix'), copyindex(3))]",
               "subnet": {
-                "id": "[variables('SubnetWebRefAppRm')]"
+                "id": "[variables('SubnetAppRM')]"
               }
             }
           }
         ]
-      }
-    },
-    {
-      "apiVersion": "2015-05-01-preview",
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat('dbnic', copyindex())]",
-      "location": "[resourceGroup().location]",
-      "tags": {
-        "displayName": "dbNic"
-      },
-      "copy": {
-        "name": "db",
-        "count": "[variables('scaleNumber')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'))]"
-      ],
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipcfg_db",
-            "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[concat(variables('dbVmIPPrefix'), copyindex())]",
-              "subnet": {
-                "id": "[variables('dbSubnetRef')]"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "jboxnic",
-      "type": "Microsoft.Network/networkInterfaces",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'))]",
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('jboxpipName'))]"
-      ],
-      "tags": {
-        "displayName": "jboxNic"
-      },
-      "properties": {
-        "ipConfigurations": [
-          {
-            "name": "ipcfgjbox",
-            "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "subnet": {
-                "id": "[variables('SubnetWebRef')]"
-              },
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('jboxpipName'))]"
-              }
-            },
-            "networkSecurityGroup": {
-              "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'jboxNsg')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "webpipphp",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "properties": {
-        "dnsSettings": {
-          "domainNameLabel": "[tolower(concat('nlb-web',parameters('resourcesPrefix')))]"
-        },
-        "publicIPAllocationMethod": "static",
-        "tags": {
-          "displayName": "webpipphp"
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "webpipportalrm",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "properties": {
-        "dnsSettings": {
-          "domainNameLabel": "[tolower(concat('nlb-PortalRm',parameters('resourcesPrefix')))]"
-        },
-        "publicIPAllocationMethod": "static",
-        "tags": {
-          "displayName": "webpipportalrm"
-        }
       }
     },
     {
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat('dbphp',variables('vmName'), copyindex())]",
+      "name": "[concat('Lserp',variables('vmName'), copyindex())]",
       "location": "[resourceGroup().location]",
       "tags": {
-        "displayName": "dbphpVms"
+        "displayName": "LS"
       },
       "copy": {
-        "name": "db",
+        "name": "LS",
         "count": "[variables('scaleNumberdb')]"
       },
       "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', 'dbnic', copyindex())]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'dbphp', variables('storageAcctName'), copyindex())]",
-        "[concat('Microsoft.Compute/availabilitySets/', 'dbAvSet')]"
+        "[concat('Microsoft.Network/networkInterfaces/', 'lserpnic', copyindex())]",
+        "[concat('Microsoft.Storage/storageAccounts/', 'lincense', variables('storageAcctName'), copyindex())]",
+        "[concat('Microsoft.Compute/availabilitySets/', 'LsAvSet')]"
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[parameters('vmSizemysql')]"
+          "vmSize": "[parameters('vmSizeLs')]"
         },
         "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets','dbAvSet')]"
+          "id": "[resourceId('Microsoft.Compute/availabilitySets','lsAvSet')]"
         },
         "osProfile": {
-          "computerName": "[concat('dbphp',variables('vmName'), copyIndex())]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('osImagePublisher')]",
-            "offer": "[variables('osImageOffer')]",
-            "sku": "[variables('osImageSKU')]",
-            "version": "[variables('osImageVersion')]"
-          },
-          "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://', 'dbphp', variables('storageAcctName'), copyindex(), '.blob.core.windows.net/vhds/', 'dbphp',variables('vmName'), copyIndex(), 'osdisk.vhd')]"
-            },
-            "caching": "ReadWrite",
-            "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "datadisk1",
-              "diskSizeGB": "128",
-              "lun": 0,
-              "vhd": {
-                "uri": "[concat('http://', 'dbphp', variables('storageAcctName'), copyindex(),'.blob.core.windows.net/vhds/', 'dbphp', variables('vmName'), copyIndex(), 'datadisk1.vhd')]"
-              },
-              "createOption": "Empty"
-            }
-          ]
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat('dbNic', copyindex()))]"
-            }
-          ]
-        }
-      },
-      "resources": [
-        {
-          "name": "install_mariadb",
-          "type": "extensions",
-          "location": "[resourceGroup().location]",
-          "apiVersion": "2015-06-15",
-          "dependsOn": [
-            "[concat('Microsoft.Compute/virtualMachines/','dbphp',variables('vmName'),copyIndex())]"
-          ],
-          "tags": {
-            "displayName": "install_mariadb"
-          },
-          "properties": {
-            "publisher": "Microsoft.OSTCExtensions",
-            "type": "CustomScriptForLinux",
-            "typeHandlerVersion": "1.4",
-            "autoUpgradeMinorVersion": true,
-            "settings": {
-              "fileUris": [
-                "[concat(variables('mariadbScriptLocation'),variables('install_mariadbScriptFileName'))]"
-              ],
-              "commandToExecute": "[concat('bash ', variables('install_mariadbScriptFileName'),' ', variables('nodeDBCount'), ' ', parameters('mySQLrootPassword'),' ',variables('subnetIPBase'), ' ', parameters('mySQLuserPassword'))]"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "apiVersion": "2015-05-01-preview",
-      "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat('SQL',variables('vmName'), copyindex())]",
-      "location": "[resourceGroup().location]",
-      "tags": {
-        "displayName": "SQL"
-      },
-      "copy": {
-        "name": "sql",
-        "count": "[variables('scaleNumberdb')]"
-      },
-      "dependsOn": [
-        "[concat('Microsoft.Network/networkInterfaces/', 'sqlphpnic', copyindex())]",
-        "[concat('Microsoft.Network/networkInterfaces/', 'sqlRmnic', copyindex())]",
-        "[concat('Microsoft.Network/networkInterfaces/', 'sqlAppnic', copyindex())]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'sql', variables('storageAcctName'), copyindex())]",
-        "[concat('Microsoft.Compute/availabilitySets/', 'sqlAvSet')]"
-      ],
-      "properties": {
-        "hardwareProfile": {
-          "vmSize": "[parameters('vmSizesql')]"
-        },
-        "availabilitySet": {
-          "id": "[resourceId('Microsoft.Compute/availabilitySets','sqlAvSet')]"
-        },
-        "osProfile": {
-          "computerName": "[concat('sql',variables('vmName'), copyIndex())]",
+          "computerName": "[concat('lincense',variables('vmName'), copyIndex())]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -723,40 +281,11 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(), '.blob.core.windows.net/vhds/', 'sql',variables('vmName'), copyIndex(), 'osdisk.vhd')]"
+              "uri": "[concat('http://', 'lincense', variables('storageAcctName'), copyindex(), '.blob.core.windows.net/vhds/', 'license',variables('vmName'), copyIndex(), 'osdisk.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
-          },
-          "dataDisks": [
-            {
-              "name": "datadisk1",
-              "diskSizeGB": "128",
-              "lun": 0,
-              "vhd": {
-                "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(),'.blob.core.windows.net/vhds/', 'sql', variables('vmName'), copyIndex(), 'datadisk1.vhd')]"
-              },
-              "createOption": "Empty"
-            },
-            {
-              "name": "datadisk2",
-              "diskSizeGB": "128",
-              "lun": 1,
-              "vhd": {
-                "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(),'.blob.core.windows.net/vhds/', 'sql', variables('vmName'), copyIndex(), 'datadisk2.vhd')]"
-              },
-              "createOption": "Empty"
-            },
-            {
-              "name": "datadisk3",
-              "diskSizeGB": "512",
-              "lun": 2,
-              "vhd": {
-                "uri": "[concat('http://', 'sql', variables('storageAcctName'), copyindex(0),'.blob.core.windows.net/vhds/', 'sql', variables('vmName'), copyIndex(), 'datadisk3.vhd')]"
-              },
-              "createOption": "Empty"
-            }
-          ]
+          }
         },
         "networkProfile": {
           "networkInterfaces": [
@@ -764,641 +293,25 @@
               "properties": {
                 "primary": true
               },
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat('sqlphpnic', copyindex()))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat('lserpnic', copyindex()))]"
             }
           ]
             }
       }
     },
     {
-      "name": "[concat('jbox',variables('vmName'))]",
-      "type": "Microsoft.Compute/virtualMachines",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', variables('SharedStorageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', 'jboxnic')]"
-      ],
-      "tags": {
-        "displayName": "JumpVm"
-      },
-      "properties": {
-        "hardwareProfile": {
-          "vmSize": "[variables('JumpVmVmSize')]"
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces', 'jboxNic')]"
-            }
-          ]
-        },
-        "osProfile": {
-          "computerName": "[concat('jbox',variables('vmName'))]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "[variables('osImagePublisher')]",
-            "offer": "[variables('osImageOffer')]",
-            "sku": "[variables('osImageSKU')]",
-            "version": "[variables('osImageVersion')]"
-          },
-          "osDisk": {
-            "caching": "ReadWrite",
-            "createOption": "FromImage",
-            "name": "JumpVmOSDisk",
-            "vhd": {
-              "uri": "[concat('http://', variables('SharedStorageAccountName'), '.blob.core.windows.net/vhds/jbox', variables('vmName'), '-osdisk.vhd')]"
-            }
-          }
-        }
-      }
-    },
-    {
-      "apiVersion": "2016-03-30",
-      "type": "Microsoft.Network/loadBalancers",
-      "location": "[resourceGroup().location]",
-      "name": "lbWebphp",
-      "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/','webpipphp')]"
-      ],
-      "properties": {
-        "frontendIPConfigurations": [
-          {
-            "name": "ipcfg_lb_php",
-            "properties": {
-              "publicIPAddress": {
-                "id": "[variables('publicIPAddressID')]"
-              }
-            }
-          }
-        ],
-        "backendAddressPools": [
-          {
-            "name": "[concat('php', variables('bePoolName'))]"
-          }
-        ],
-        "loadBalancingRules": [
-          {
-            "name": "lbhttp_php",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigID')]"
-              },
-              "backendAddressPool": {
-                "id": "[variables('lbPoolID')]"
-              },
-              "protocol": "tcp",
-              "frontendPort": 80,
-              "backendPort": 80,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 5,
-              "probe": {
-                "id": "[variables('lbProbeID')]"
-              }
-            }
-          },
-          {
-            "name": "lbhttps_php",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigID')]"
-              },
-              "backendAddressPool": {
-                "id": "[variables('lbPoolID')]"
-              },
-              "protocol": "tcp",
-              "frontendPort": 443,
-              "backendPort": 443,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 5,
-              "probe": {
-                "id": "[variables('lbProbeID')]"
-              }
-            }
-          }
-        ],
-        "probes": [
-          {
-            "name": "tcpProbe_php",
-            "properties": {
-              "protocol": "tcp",
-              "port": 80,
-              "intervalInSeconds": "5",
-              "numberOfProbes": "3"
-            }
-          }
-        ],
-        "inboundNatPools": [
-          {
-            "name": "[concat('php', variables('natPoolName'))]",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigID')]"
-              },
-              "protocol": "tcp",
-              "frontendPortRangeStart": "[variables('natStartPort')]",
-              "frontendPortRangeEnd": "[variables('natEndPort')]",
-              "backendPort": "[variables('natBackendPort')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "apiVersion": "2016-03-30",
-      "type": "Microsoft.Network/loadBalancers",
-      "location": "[resourceGroup().location]",
-      "name": "lbWebportalrm",
-      "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/','webpipportalrm')]"
-      ],
-      "properties": {
-        "frontendIPConfigurations": [
-          {
-            "name": "ipcfg_lb_portalrm",
-            "properties": {
-              "publicIPAddress": {
-                "id": "[variables('publicIPAddressIDRM')]"
-              }
-            }
-          }
-        ],
-        "backendAddressPools": [
-          {
-            "name": "[concat('portalRm', variables('bePoolNameportalrm'))]"
-          }
-        ],
-        "loadBalancingRules": [
-          {
-            "name": "lbhttp_portalrm",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigIDrm')]"
-              },
-              "backendAddressPool": {
-                "id": "[variables('lbPoolIDrm')]"
-              },
-              "protocol": "tcp",
-              "frontendPort": 80,
-              "backendPort": 80,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 5,
-              "probe": {
-                "id": "[variables('lbProbeIDrm')]"
-              }
-            }
-          },
-          {
-            "name": "lbhttps_portalrm",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigIDrm')]"
-              },
-              "backendAddressPool": {
-                "id": "[variables('lbPoolIDrm')]"
-              },
-              "protocol": "tcp",
-              "frontendPort": 443,
-              "backendPort": 443,
-              "enableFloatingIP": false,
-              "idleTimeoutInMinutes": 5,
-              "probe": {
-                "id": "[variables('lbProbeIDrm')]"
-              }
-            }
-          }
-        ],
-        "probes": [
-          {
-            "name": "tcpProbe_portalrm",
-            "properties": {
-              "protocol": "tcp",
-              "port": 80,
-              "intervalInSeconds": "5",
-              "numberOfProbes": "3"
-            }
-          }
-        ],
-        "inboundNatPools": [
-          {
-            "name": "[concat('portalrm', variables('natPoolNameportalrm'))]",
-            "properties": {
-              "frontendIPConfiguration": {
-                "id": "[variables('frontEndIPConfigIDrm')]"
-              },
-              "protocol": "tcp",
-              "frontendPortRangeStart": "[variables('natStartPort')]",
-              "frontendPortRangeEnd": "[variables('natEndPort')]",
-              "backendPort": "[variables('natBackendPort')]"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachineScaleSets",
-      "name": "webfarm_php",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '0')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '1')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '2')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '3')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssphp',variables('storageAcctName'), '4')]",
-        "[concat('Microsoft.Network/loadBalancers/', 'lbWebphp')]",
-        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamephp'))]"
-      ],
-      "tags": {
-        "displayName": "webfarm_php"
-      },
-      "sku": {
-        "capacity": 2,
-        "name": "Standard_DS1_v2",
-        "tier": "Standard"
-      },
-      "properties": {
-        "overprovision": "true",
-        "upgradePolicy": {
-          "mode": "Manual"
-        },
-        "virtualMachineProfile": {
-          "storageProfile": {
-            "osDisk": {
-              "vhdContainers": [
-                "[concat('https://', 'vmssphp', variables('storageAcctName'), '0.blob.core.windows.net/vhds0')]",
-                "[concat('https://', 'vmssphp', variables('storageAcctName'), '1.blob.core.windows.net/vhds1')]",
-                "[concat('https://', 'vmssphp', variables('storageAcctName'), '2.blob.core.windows.net/vhds2')]",
-                "[concat('https://', 'vmssphp', variables('storageAcctName'), '3.blob.core.windows.net/vhds3')]",
-                "[concat('https://', 'vmssphp', variables('storageAcctName'), '4.blob.core.windows.net/vhds4')]"
-              ],
-              "name": "osdisk",
-              "caching": "ReadOnly",
-              "createOption": "FromImage"
-            },
-            "imageReference": {
-              "publisher": "[variables('osImagePublisher')]",
-              "offer": "[variables('osImageOffer')]",
-              "sku": "[variables('osImageSKU')]",
-              "version": "[variables('osImageVersion')]"
-            }
-          },
-          "osProfile": {
-            "computerNamePrefix": "[concat('webphp',variables('vmName'))]",
-            "adminUsername": "[parameters('adminUsername')]",
-            "adminPassword": "[parameters('adminPassword')]"
-          },
-          "networkProfile": {
-            "networkInterfaceConfigurations": [
-              {
-                "name": "[variables('phpnicName')]",
-                "properties": {
-                  "ipConfigurations": [
-                    {
-                      "name": "ipcfg_lb_php",
-                      "properties": {
-                        "subnet": {
-                          "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetNamePhp'), '/subnets/', variables('subnetWeb'))]"
-                        },
-                        "loadBalancerBackendAddressPools": [
-                          {
-                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/backendAddressPools/', 'php', variables('bePoolName'))]"
-                          }
-                        ],
-                        "loadBalancerInboundNatPools": [
-                          {
-                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebphp/inboundNatPools/', 'php', variables('natPoolName'))]"
-                          }
-                        ]
-                      }
-                    }
-                  ],
-                  "primary": "true"
-                }
-              }
-            ]
-          },
-          "extensionProfile": {
-            "extensions": [
-              {
-                "name": "LinuxDiagnostic",
-                "properties": {
-                  "publisher": "Microsoft.OSTCExtensions",
-                  "type": "LinuxDiagnostic",
-                  "typeHandlerVersion": "2.3",
-                  "autoUpgradeMinorVersion": true,
-                  "settings": {
-                    "xmlCfg": "[base64(concat(variables('wadcfgxstart'),variables('wadmetricsresourceid'),variables('wadcfgxend')))]",
-                    "storageAccount": "[variables('diagnosticsStorageAccountName')]"
-                  },
-                  "protectedSettings": {
-                    "storageAccountName": "[variables('diagnosticsStorageAccountName')]",
-                    "storageAccountKey": "[listkeys(variables('accountid'), variables('storageApiVersion')).key1]",
-                    "storageAccountEndPoint": "https://core.windows.net"
-                  }
-                }
-              },
-              {
-                "name": "install_php",
-                "properties": {
-                  "publisher": "Microsoft.OSTCExtensions",
-                  "type": "CustomScriptForLinux",
-                  "typeHandlerVersion": "1.4",
-                  "autoUpgradeMinorVersion": true,
-                  "settings": {
-                    "fileUris": [
-                      "[concat(variables('phpScriptLocation'),variables('install_phpScriptFileName'))]"
-                    ],
-                    "commandToExecute": "[concat('bash', variables('install_phpScriptFileName'))]"
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Compute/virtualMachineScaleSets",
-      "name": "webfarm_Rm",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2016-03-30",
-      "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '0')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '1')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '2')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '3')]",
-        "[concat('Microsoft.Storage/storageAccounts/', 'vmssrm',variables('storageAcctName'), '4')]",
-        "[concat('Microsoft.Network/loadBalancers/', 'lbWebportalrm')]",
-        "[concat('Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'))]"
-      ],
-      "tags": {
-        "displayName": "webfarm_Rm"
-      },
-      "sku": {
-        "capacity": 2,
-        "name": "Standard_DS2_v2",
-        "tier": "Standard"
-      },
-      "properties": {
-        "overprovision": "true",
-        "upgradePolicy": {
-          "mode": "Manual"
-        },
-        "virtualMachineProfile": {
-          "storageProfile": {
-            "osDisk": {
-              "vhdContainers": [
-                "[concat('https://', 'vmssrm', variables('storageAcctName'), '0.blob.core.windows.net/vhds0')]",
-                "[concat('https://', 'vmssrm', variables('storageAcctName'), '1.blob.core.windows.net/vhds1')]",
-                "[concat('https://', 'vmssrm', variables('storageAcctName'), '2.blob.core.windows.net/vhds2')]",
-                "[concat('https://', 'vmssrm', variables('storageAcctName'), '3.blob.core.windows.net/vhds3')]",
-                "[concat('https://', 'vmssrm', variables('storageAcctName'), '4.blob.core.windows.net/vhds4')]"
-              ],
-              "name": "osdisk",
-              "caching": "ReadOnly",
-              "createOption": "FromImage"
-            },
-            "imageReference": {
-              "publisher": "[variables('osImagePublisherWin')]",
-              "offer": "[variables('osImageOfferWin')]",
-              "sku": "[variables('osImageSKUWin')]",
-              "version": "[variables('osImageVersion')]"
-            }
-          },
-          "osProfile": {
-            "computerNamePrefix": "Portalrm",
-            "adminUsername": "[parameters('adminUsername')]",
-            "adminPassword": "[parameters('adminPassword')]"
-          },
-          "networkProfile": {
-            "networkInterfaceConfigurations": [
-              {
-                "name": "[variables('portalrmnicName')]",
-                "properties": {
-                  "ipConfigurations": [
-                    {
-                      "name": "ipcfg_lb_portalrm",
-                      "properties": {
-                        "subnet": {
-                          "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('vnetNamePortalRm'), '/subnets/', variables('SubnetWebPortalrm'))]"
-                        },
-                        "loadBalancerBackendAddressPools": [
-                          {
-                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebportalrm/backendAddressPools/', 'portalRm', variables('bePoolNameportalrm'))]"
-                          }
-                        ],
-                        "loadBalancerInboundNatPools": [
-                          {
-                            "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/lbWebportalrm/inboundNatPools/', 'portalrm', variables('natPoolNameportalrm'))]"
-                          }
-                        ]
-                      }
-                    }
-                  ],
-                  "primary": "true"
-                }
-              }
-            ]
-          },
-          "extensionProfile": {
-            "extensions": [
-              {
-                "name": "AzureDiagnostics",
-                "properties": {
-                  "publisher": "Microsoft.Azure.Diagnostics",
-                  "type": "IaaSDiagnostics",
-                  "typeHandlerVersion": "1.5",
-                  "autoUpgradeMinorVersion": true,
-                  "settings": {
-                    "xmlCfg": "[base64(concat(variables('wadcfgxstart'),variables('wadmetricsresourceid'),variables('wadcfgxend')))]",
-                    "storageAccount": "[variables('diagnosticsStorageAccountName')]"
-                  },
-                  "protectedSettings": {
-                    "storageAccountName": "[variables('diagnosticsStorageAccountName')]",
-                    "storageAccountKey": "[listkeys(variables('accountid'), variables('storageApiVersion')).key1]",
-                    "storageAccountEndPoint": "https://core.windows.net"
-                  }
-                }
-              },
-              {
-                "name": "install_portalrm",
-                "properties": {
-                  "publisher": "Microsoft.Compute",
-                  "type": "CustomScriptExtension",
-                  "typeHandlerVersion": "1.4",
-                  "autoUpgradeMinorVersion": true,
-                  "settings": {
-                    "fileUris": [
-                      "[concat(variables('portalrmScriptLocation'),variables('portalrmScriptFileName'))]"
-                    ],
-                    "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('portalrmScriptFileName'))]"
-                  }
-                }
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "dbAvSet",
+      "name": "lsAvSet",
       "type": "Microsoft.Compute/availabilitySets",
       "location": "[resourceGroup().location]",
       "apiVersion": "2015-06-15",
       "dependsOn": [],
       "tags": {
-        "displayName": "dbAvSet"
-      },
-      "properties": {
-        "platformUpdateDomainCount": 5,
-        "platformFaultDomainCount": 3
-      }
-    },
-    {
-      "name": "sqlAvSet",
-      "type": "Microsoft.Compute/availabilitySets",
-      "location": "[resourceGroup().location]",
-      "apiVersion": "2015-06-15",
-      "dependsOn": [],
-      "tags": {
-        "displayName": "sqlAvSet"
+        "displayName": "lsAvSet"
       },
       "properties": {
         "platformUpdateDomainCount": 5,
         "platformFaultDomainCount": 3
       },
-    },
-    {
-      "type": "Microsoft.Insights/autoscaleSettings",
-      "apiVersion": "2015-04-01",
-      "name": "autoscalewad",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "Microsoft.Compute/virtualMachineScaleSets/webfarm_php"
-      ],
-      "properties": {
-        "name": "autoscalewad",
-        "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_php')]",
-        "enabled": true,
-        "profiles": [
-          {
-            "name": "Profile1",
-            "capacity": {
-              "minimum": "2",
-              "maximum": "5",
-              "default": "2"
-            },
-            "rules": [
-              {
-                "metricTrigger": {
-                  "metricName": "\\Processor\\PercentProcessorTime",
-                  "metricNamespace": "",
-                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/','webfarm_php')]",
-                  "timeGrain": "PT1M",
-                  "statistic": "Average",
-                  "timeWindow": "PT5M",
-                  "timeAggregation": "Average",
-                  "operator": "GreaterThan",
-                  "threshold": 80
-                },
-                "scaleAction": {
-                  "direction": "Increase",
-                  "type": "ChangeCount",
-                  "value": "1",
-                  "cooldown": "PT1M"
-                }
-              },
-              {
-                "metricTrigger": {
-                  "metricName": "\\Processor\\PercentProcessorTime",
-                  "metricNamespace": "",
-                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_php')]",
-                  "timeGrain": "PT1M",
-                  "statistic": "Average",
-                  "timeWindow": "PT5M",
-                  "timeAggregation": "Average",
-                  "operator": "LessThan",
-                  "threshold": 50
-                },
-                "scaleAction": {
-                  "direction": "Decrease",
-                  "type": "ChangeCount",
-                  "value": "1",
-                  "cooldown": "PT5M"
-                }
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "type": "Microsoft.Insights/autoscaleSettings",
-      "apiVersion": "2015-04-01",
-      "name": "autoscalewad_Rm",
-      "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "Microsoft.Compute/virtualMachineScaleSets/webfarm_Rm"
-      ],
-      "properties": {
-        "name": "autoscalewad_Rm",
-        "targetResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_Rm')]",
-        "enabled": true,
-        "profiles": [
-          {
-            "name": "Profile1",
-            "capacity": {
-              "minimum": "2",
-              "maximum": "5",
-              "default": "2"
-            },
-            "rules": [
-              {
-                "metricTrigger": {
-                  "metricName": "\\Processor\\PercentProcessorTime",
-                  "metricNamespace": "",
-                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/','webfarm_Rm')]",
-                  "timeGrain": "PT1M",
-                  "statistic": "Average",
-                  "timeWindow": "PT5M",
-                  "timeAggregation": "Average",
-                  "operator": "GreaterThan",
-                  "threshold": 80
-                },
-                "scaleAction": {
-                  "direction": "Increase",
-                  "type": "ChangeCount",
-                  "value": "1",
-                  "cooldown": "PT1M"
-                }
-              },
-              {
-                "metricTrigger": {
-                  "metricName": "\\Processor\\PercentProcessorTime",
-                  "metricNamespace": "",
-                  "metricResourceUri": "[concat('/subscriptions/',subscription().subscriptionId, '/resourceGroups/',  resourceGroup().name, '/providers/Microsoft.Compute/virtualMachineScaleSets/', 'webfarm_Rm')]",
-                  "timeGrain": "PT1M",
-                  "statistic": "Average",
-                  "timeWindow": "PT5M",
-                  "timeAggregation": "Average",
-                  "operator": "LessThan",
-                  "threshold": 50
-                },
-                "scaleAction": {
-                  "direction": "Decrease",
-                  "type": "ChangeCount",
-                  "value": "1",
-                  "cooldown": "PT5M"
-                }
-              }
-            ]
-          }
-        ]
-      }
     }
   ]
     }
